@@ -12,13 +12,27 @@ OpenTone is bring-your-own-music software. It does not host, distribute, sell, s
 
 OpenTone is a calm, modern, offline-first personal music library and desktop player. It is **not** a Spotify clone and does not provide music. Users bring their own legally obtained music files, import them locally, manage their library, and play music offline.
 
-### Phase 1 (Current)
+### Current Features
 
-Desktop-only MVP with:
-- **Local music import** — Import a folder, recursively scan for `.mp3`, `.flac`, `.wav`, `.aac`, `.m4a`, `.ogg`
+Desktop application with:
+
+- **Local music import** — Import a folder, recursively scan for supported audio formats
+- **Real metadata extraction** — Reads ID3, Vorbis Comments, and MP4 tags via the `lofty` crate (title, artist, album, track number, disc number, year, duration, bitrate, sample rate)
+- **SQLite persistence** — Library state, settings, and playback history stored in a local SQLite database (8 tables, WAL mode)
+- **Album artwork** — Embedded artwork extracted, resized (max 256×256), cached to disk as PNG, and served as base64 data URIs
+- **Sortable UI** — Track columns (title, artist, album, duration, etc.) are clickable to sort ascending/descending
+- **Album grid view** — Browse albums as a visual grid with artwork thumbnails
+- **Artist expandable view** — Browse artists with collapsible album/track lists
+- **Search** — Real-time search across track titles, artists, and albums
+- **Favorites** — Toggle favorite status per track
 - **Local playback** — Play/pause, next/previous, seek bar, queue
-- **Library management** — Track list, artist/album views, search/filter
+- **Rescan support** — Re-index all previously added paths; stale tracks removed automatically
+- **Settings persistence** — User preferences stored in the database
 - **Zero data collection** — Everything stays on your machine
+
+### Supported Audio Formats
+
+mp3, flac, wav, aac, m4a, ogg, opus, wv (WavPack), aiff
 
 ### Future Phases
 
@@ -34,7 +48,9 @@ See [ROADMAP.md](./ROADMAP.md) for the full product roadmap.
 | Frontend | React 19 + TypeScript |
 | Build tool | Vite 6 |
 | Styling | Tailwind CSS 4 |
-| Local DB | SQLite (via Tauri) |
+| Local DB | SQLite (via `rusqlite` with bundled) |
+| Metadata | [Lofty](https://crates.io/crates/lofty) (ID3, Vorbis, MP4) |
+| Artwork processing | [`image`](https://crates.io/crates/image) crate (PNG/JPEG) |
 | Audio | Rust + web audio |
 
 ---
@@ -103,6 +119,9 @@ OpenTone/
 ├── src-tauri/                # Rust backend (Tauri)
 │   ├── src/
 │   │   ├── lib.rs            # Tauri commands and library
+│   │   ├── db.rs             # SQLite database operations
+│   │   ├── metadata.rs       # Real metadata extraction (lofty)
+│   │   ├── artwork.rs        # Album artwork extraction + caching
 │   │   └── main.rs           # Entry point
 │   ├── Cargo.toml
 │   └── tauri.conf.json
@@ -120,7 +139,7 @@ OpenTone/
 - **Offline-first** — No account required. No data leaves your machine.
 - **Ownership-first** — You own your music files. OpenTone just helps you organize and play them.
 - **Transparent** — No recommendations, no social features, no tracking.
-- **Privacy-respecting** — Zero telemetry, zero data collection, zero cloud dependencies in Phase 1.
+- **Privacy-respecting** — Zero telemetry, zero data collection, zero cloud dependencies.
 
 ---
 
