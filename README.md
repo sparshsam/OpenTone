@@ -52,6 +52,24 @@ See [ROADMAP.md](./ROADMAP.md) for the full product roadmap.
 
 ---
 
+## Download
+
+> **OpenTone is currently pre-release software.** Features are still in development and things may change.
+
+Desktop installers are available from **GitHub Releases**:
+
+1. Go to [github.com/sparshsam/OpenTone/releases](https://github.com/sparshsam/OpenTone/releases)
+2. Find the latest release
+3. Download the installer for your operating system:
+   - **Windows** → `.exe` or `.msi`
+   - **Linux** → `.AppImage` or `.deb`
+   - **macOS (Intel)** → `.dmg` (x64)
+   - **macOS (Apple Silicon)** → `.dmg` (aarch64)
+
+**OpenTone is a desktop app.** It is not deployed to Vercel, Netlify, or any web platform. All installers run locally on your machine. See [docs/release-builds.md](./docs/release-builds.md) for details.
+
+---
+
 ## Stack
 
 | Layer | Technology |
