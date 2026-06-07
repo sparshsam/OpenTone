@@ -1,6 +1,17 @@
+mod artwork;
+mod db;
+mod metadata;
+
 use serde::Serialize;
+use std::collections::HashMap;
 use std::path::Path;
+use std::sync::Mutex;
+use tauri::{AppHandle, Manager, State};
 use walkdir::WalkDir;
+
+// ---------------------------------------------------------------------------
+// Data structures returned to the frontend
+// ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TrackInfo {
@@ -20,9 +31,41 @@ pub struct TrackInfo {
     pub file_size: u64,
     pub modified_at: String,
     pub is_favorite: bool,
+    pub has_artwork: bool,
 }
 
-const SUPPORTED_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "m4a", "ogg"];
+#[derive(Debug, Clone, Serialize)]
+pub struct AlbumInfo {
+    pub id: String,
+    pub title: String,
+    pub artist: String,
+    pub year: i32,
+    pub track_count: i32,
+    pub duration: f64,
+    pub has_artwork: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ArtistInfo {
+    pub id: String,
+    pub name: String,
+    pub album_count: i32,
+    pub track_count: i32,
+}
+
+// ---------------------------------------------------------------------------
+// Application state
+// ---------------------------------------------------------------------------
+
+pub struct AppState {
+    pub db: Mutex<rusqlite::Connection>,
+}
+
+// ---------------------------------------------------------------------------
+// Supported audio formats
+// ---------------------------------------------------------------------------
+
+const SUPPORTED_FORMATS: &[&str] = &["mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wv", "aiff"];
 
 fn is_supported(path: &Path) -> bool {
     path.extension()
@@ -31,11 +74,29 @@ fn is_supported(path: &Path) -> bool {
         .is_some_and(|ext| SUPPORTED_FORMATS.contains(&ext.as_str()))
 }
 
-#[tauri::command]
-fn scan_music_folder(path: String) -> Result<Vec<TrackInfo>, String> {
-    let mut tracks = Vec::new();
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-    for entry in WalkDir::new(&path)
+/// Get the canonical artwork cache directory inside the Tauri app data dir.
+fn artwork_cache_dir(app: &AppHandle) -> Result<std::path::PathBuf, String> {
+    let app_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
+    Ok(app_dir.join("artwork"))
+}
+
+/// Walk a directory, parse metadata for every supported audio file,
+/// persist to SQLite, and return the list of `TrackInfo`.
+fn index_folder(
+    conn: &rusqlite::Connection,
+    path: &str,
+) -> Result<Vec<TrackInfo>, String> {
+    let mut tracks: Vec<TrackInfo> = Vec::new();
+    let mut errors: Vec<String> = Vec::new();
+
+    for entry in WalkDir::new(path)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
@@ -49,71 +110,256 @@ fn scan_music_folder(path: String) -> Result<Vec<TrackInfo>, String> {
             continue;
         }
 
-        let metadata = entry.metadata().map_err(|e| e.to_string())?;
-        let file_name = file_path
-            .file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("Unknown")
-            .to_string();
-
-        let format = file_path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("")
-            .to_lowercase();
-
-        let modified = metadata
-            .modified()
-            .map(|t| {
-                let secs = t
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs();
-                chrono::DateTime::from_timestamp(secs as i64, 0)
-                    .map(|dt| dt.to_rfc3339())
-                    .unwrap_or_default()
-            })
-            .unwrap_or_default();
-
-        tracks.push(TrackInfo {
-            id: uuid::Uuid::new_v4().to_string(),
-            path: file_path.to_string_lossy().to_string(),
-            title: file_name,
-            artist: "Unknown Artist".to_string(),
-            album: "Unknown Album".to_string(),
-            album_artist: "Unknown Artist".to_string(),
-            track_number: 0,
-            disc_number: 1,
-            year: 0,
-            duration: 0.0, // Would use a metadata parser in production
-            format,
-            bitrate: 0,
-            sample_rate: 0,
-            file_size: metadata.len(),
-            modified_at: modified,
-            is_favorite: false,
-        });
+        match metadata::extract_metadata(file_path) {
+            Ok(track) => {
+                if let Err(e) = db::upsert_track(conn, &track) {
+                    errors.push(format!("DB insert failed for '{}': {}", track.path, e));
+                } else {
+                    tracks.push(track);
+                }
+            }
+            Err(e) => {
+                errors.push(e);
+            }
+        }
     }
 
-    // Sort by path for deterministic ordering
-    tracks.sort_by(|a, b| a.path.cmp(&b.path));
+    // Record this path as indexed
+    if let Err(e) = db::upsert_indexed_path(conn, path, tracks.len() as i32) {
+        errors.push(format!("Failed to record indexed path: {}", e));
+    }
 
+    // If there were any errors, surface them as a single string (non-fatal)
+    if !errors.is_empty() {
+        eprintln!("Indexing warnings for '{}':\n  {}", path, errors.join("\n  "));
+    }
+
+    tracks.sort_by(|a, b| a.path.cmp(&b.path));
     Ok(tracks)
 }
 
+// ---------------------------------------------------------------------------
+// Tauri commands
+// ---------------------------------------------------------------------------
+
+/// Recursively scan a folder, extract real metadata with `lofty`, store in
+/// SQLite, and return the list of tracks.
+#[tauri::command]
+fn scan_folder(path: String, state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    index_folder(&conn, &path)
+}
+
+/// Return all tracks from the SQLite library.
+#[tauri::command]
+fn get_library(state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_all_tracks(&conn)
+}
+
+/// Return albums aggregated from the database.
+#[tauri::command]
+fn get_albums(state: State<AppState>) -> Result<Vec<AlbumInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_albums(&conn)
+}
+
+/// Return artists aggregated from the database.
+#[tauri::command]
+fn get_artists(state: State<AppState>) -> Result<Vec<ArtistInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_artists(&conn)
+}
+
+/// Extract embedded album artwork for a track, resize, cache, and return as
+/// a base64 data URI string.
+#[tauri::command]
+fn get_album_artwork(
+    track_id: String,
+    state: State<AppState>,
+    app: AppHandle,
+) -> Result<Option<String>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let track = db::get_track_by_id(&conn, &track_id)?;
+    let cache_dir = artwork_cache_dir(&app)?;
+
+    // Drop lock before I/O-heavy artwork extraction
+    drop(conn);
+
+    let cached = artwork::extract_and_cache_artwork(&track.path, &track_id, &cache_dir)?;
+
+    match cached {
+        Some(path) => {
+            let uri = artwork::cached_artwork_as_data_uri(&path)?;
+
+            // Update the has_artwork flag if it wasn't set
+            if !track.has_artwork {
+                if let Ok(conn) = state.db.lock() {
+                    let _ = db::set_track_has_artwork(&conn, &track_id, true);
+                }
+            }
+
+            Ok(Some(uri))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Toggle the favourite status of a track. Returns the new state.
+#[tauri::command]
+fn toggle_favorite(track_id: String, state: State<AppState>) -> Result<bool, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::toggle_track_favorite(&conn, &track_id)
+}
+
+/// Search tracks by title, artist, or album.
+#[tauri::command]
+fn search_tracks(query: String, state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::search_tracks(&conn, &query)
+}
+
+/// Re-scan all previously indexed paths and update the database.
+/// Tracks that no longer exist on disk are removed.
+#[tauri::command]
+fn rescan_library(state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+
+    let indexed_paths = db::get_indexed_paths(&conn)?;
+
+    if indexed_paths.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    // Collect all currently valid file paths so we can prune stale entries
+    let mut all_valid_paths: Vec<String> = Vec::new();
+    let mut all_tracks: Vec<TrackInfo> = Vec::new();
+
+    for dir_path in &indexed_paths {
+        match index_folder(&conn, dir_path) {
+            Ok(tracks) => {
+                for t in &tracks {
+                    all_valid_paths.push(t.path.clone());
+                }
+                all_tracks.extend(tracks);
+            }
+            Err(e) => {
+                eprintln!("Warning: failed to rescan '{}': {}", dir_path, e);
+            }
+        }
+    }
+
+    // Remove tracks whose paths are no longer valid
+    let deleted = db::remove_missing_tracks_by_paths(&conn, &all_valid_paths)?;
+    if deleted > 0 {
+        eprintln!("Removed {} stale track(s) from the library.", deleted);
+    }
+
+    all_tracks.sort_by(|a, b| a.path.cmp(&b.path));
+    Ok(all_tracks)
+}
+
+/// Get all settings as a HashMap.
+#[tauri::command]
+fn get_settings(state: State<AppState>) -> Result<HashMap<String, String>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_all_settings(&conn)
+}
+
+/// Set a single setting value.
+#[tauri::command]
+fn set_setting(
+    key: String,
+    value: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::set_setting(&conn, &key, &value)
+}
+
+/// Return the list of supported audio formats.
 #[tauri::command]
 fn get_supported_formats() -> Vec<String> {
     SUPPORTED_FORMATS.iter().map(|s| s.to_string()).collect()
 }
+
+// ---------------------------------------------------------------------------
+// Application entrypoint
+// ---------------------------------------------------------------------------
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .setup(|app| {
+            // Resolve the canonical app data directory
+            let app_dir = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to resolve app data dir: {}", e))?;
+            std::fs::create_dir_all(&app_dir)
+                .map_err(|e| format!("Failed to create app data dir: {}", e))?;
+
+            let db_path = app_dir.join("library.db");
+            let conn = rusqlite::Connection::open(&db_path)
+                .map_err(|e| format!("Failed to open SQLite database: {}", e))?;
+
+            // Enable WAL mode for better concurrent read performance
+            conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
+                .map_err(|e| format!("Failed to set pragmas: {}", e))?;
+
+            db::initialize_db(&conn)?;
+
+            app.manage(AppState {
+                db: Mutex::new(conn),
+            });
+
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
-            scan_music_folder,
-            get_supported_formats
+            scan_folder,
+            get_library,
+            get_albums,
+            get_artists,
+            get_album_artwork,
+            toggle_favorite,
+            search_tracks,
+            rescan_library,
+            get_settings,
+            set_setting,
+            get_supported_formats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

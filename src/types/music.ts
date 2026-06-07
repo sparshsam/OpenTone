@@ -15,19 +15,20 @@ export interface Track {
   file_size: number; // bytes
   modified_at: string; // ISO timestamp
   is_favorite: boolean;
+  has_artwork: boolean;
 }
 
-export interface Album {
+export interface AlbumInfo {
   id: string;
   title: string;
   artist: string;
   year: number;
   track_count: number;
   duration: number;
-  cover_path: string | null;
+  has_artwork: boolean;
 }
 
-export interface Artist {
+export interface ArtistInfo {
   id: string;
   name: string;
   album_count: number;
@@ -52,3 +53,7 @@ export interface QueueItem {
   track: Track;
   added_at: number;
 }
+
+export type SortField = "title" | "artist" | "album" | "duration" | "year" | "track_number" | "format" | "file_size";
+
+export type SortDirection = "asc" | "desc";

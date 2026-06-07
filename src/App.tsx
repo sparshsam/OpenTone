@@ -1,41 +1,29 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { type Track, type View } from "@/types/music";
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import {
+  type Track,
+  type AlbumInfo,
+  type ArtistInfo,
+  type View,
+} from "@/types/music";
 import Sidebar from "@/components/Sidebar";
 import LibraryView from "@/components/LibraryView";
+import AlbumView from "@/components/AlbumView";
+import ArtistView from "@/components/ArtistView";
 import SettingsView from "@/components/SettingsView";
 import PlaybackBar from "@/components/PlaybackBar";
-
-// Mock tracks for development before Tauri backend is connected
-const MOCK_TRACKS: Track[] = [
-  {
-    id: "1", path: "/music/song1.flac", title: "Midnight Waves",
-    artist: "Luna Drift", album: "Coastal", album_artist: "Luna Drift",
-    track_number: 1, disc_number: 1, year: 2024, duration: 245,
-    format: "flac", bitrate: 1411, sample_rate: 44100,
-    file_size: 42_500_000, modified_at: "2024-06-01T10:00:00Z", is_favorite: false,
-  },
-  {
-    id: "2", path: "/music/song2.mp3", title: "Golden Hour",
-    artist: "Solstice", album: "Dawn", album_artist: "Solstice",
-    track_number: 1, disc_number: 1, year: 2023, duration: 198,
-    format: "mp3", bitrate: 320, sample_rate: 44100,
-    file_size: 7_920_000, modified_at: "2023-11-15T14:30:00Z", is_favorite: false,
-  },
-  {
-    id: "3", path: "/music/song3.wav", title: "Silicon Dreams",
-    artist: "Neon Pulse", album: "Binary Romance", album_artist: "Neon Pulse",
-    track_number: 3, disc_number: 1, year: 2025, duration: 312,
-    format: "wav", bitrate: 2116, sample_rate: 96000,
-    file_size: 80_580_000, modified_at: "2025-01-20T09:15:00Z", is_favorite: true,
-  },
-];
 
 export default function App() {
   const [currentView, setCurrentView] = useState<View>("library");
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [albums, setAlbums] = useState<AlbumInfo[]>([]);
+  const [artists, setArtists] = useState<ArtistInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [libraryPath, setLibraryPath] = useState<string | null>(null);
+  const [artworkCache, setArtworkCache] = useState<Record<string, string>>({});
 
   // Playback state
   const [queue, setQueue] = useState<Track[]>([]);
@@ -44,7 +32,36 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const currentTrack = queueIndex >= 0 && queueIndex < queue.length ? queue[queueIndex]! : null;
+  const currentTrack =
+    queueIndex >= 0 && queueIndex < queue.length
+      ? queue[queueIndex]!
+      : null;
+
+  // Load library data on mount
+  useEffect(() => {
+    async function loadLibrary() {
+      try {
+        const [loadedTracks, loadedAlbums, loadedArtists, settings] =
+          await Promise.all([
+            invoke<Track[]>("get_library"),
+            invoke<AlbumInfo[]>("get_albums"),
+            invoke<ArtistInfo[]>("get_artists"),
+            invoke<Record<string, string>>("get_settings"),
+          ]);
+        setTracks(loadedTracks);
+        setAlbums(loadedAlbums);
+        setArtists(loadedArtists);
+        if (settings.library_path) {
+          setLibraryPath(settings.library_path);
+        }
+      } catch (err) {
+        console.error("Failed to load library:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadLibrary();
+  }, []);
 
   // Set up audio element
   useEffect(() => {
@@ -53,11 +70,9 @@ export default function App() {
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
     const onEnded = () => {
-      // Auto-advance to next track
       setQueueIndex((prev) => {
         const next = prev + 1;
         if (next < queue.length) {
-          // Will be handled by the queueIndex effect
           return next;
         }
         setIsPlaying(false);
@@ -74,6 +89,7 @@ export default function App() {
       audio.pause();
       audio.src = "";
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load track when queue index changes
@@ -81,15 +97,13 @@ export default function App() {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    // For now, load a silent placeholder — real Tauri backend
-    // will provide the actual file path via asset protocol
     audio.src = currentTrack.path;
     if (isPlaying) {
       audio.play().catch(() => {
-        // Playback may fail without proper audio backend
         console.warn("Playback unavailable — audio backend may not be connected");
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueIndex, currentTrack?.id]);
 
   // Handle play/pause
@@ -102,6 +116,7 @@ export default function App() {
     } else {
       audio.pause();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
   const handlePlayPause = useCallback(() => {
@@ -118,7 +133,6 @@ export default function App() {
     if (queue.length === 0) return;
     const audio = audioRef.current;
     if (audio && audio.currentTime > 3) {
-      // Restart current track if past 3 seconds
       audio.currentTime = 0;
       return;
     }
@@ -135,14 +149,12 @@ export default function App() {
 
   const handlePlayTrack = useCallback(
     (track: Track) => {
-      // If track is already in queue at current position, resume
       if (currentTrack?.id === track.id) {
         if (isPlaying) return;
         setIsPlaying(true);
         return;
       }
 
-      // Check if track is already queued
       const existingIdx = queue.findIndex((t) => t.id === track.id);
       if (existingIdx >= 0) {
         setQueueIndex(existingIdx);
@@ -150,7 +162,6 @@ export default function App() {
         return;
       }
 
-      // Add to queue and play
       setQueue((prev) => [...prev, track]);
       setQueueIndex(queue.length);
       setIsPlaying(true);
@@ -158,18 +169,203 @@ export default function App() {
     [queue, currentTrack, isPlaying],
   );
 
+  // Load artwork when a track is selected
+  useEffect(() => {
+    if (!currentTrack || !currentTrack.has_artwork) return;
+    const trackId = currentTrack.id;
+    if (artworkCache[trackId]) return;
+
+    async function loadArtwork() {
+      try {
+        const dataUri = await invoke<string | null>(
+          "get_album_artwork",
+          { trackId },
+        );
+        if (dataUri) {
+          setArtworkCache((prev) => ({
+            ...prev,
+            [trackId]: dataUri,
+          }));
+        }
+      } catch (err) {
+        console.warn("Failed to load artwork:", err);
+      }
+    }
+    loadArtwork();
+  }, [currentTrack?.id, currentTrack?.has_artwork, artworkCache]);
+
   const handleImport = useCallback(async () => {
-    // For MVP, load mock tracks as a demo
-    if (tracks.length === 0) {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: "Select music folder",
+      });
+      if (!selected) return;
+
       setIsScanning(true);
-      // Simulate scan delay
-      await new Promise((r) => setTimeout(r, 500));
-      setTracks(MOCK_TRACKS);
-      setQueue(MOCK_TRACKS);
-      setLibraryPath("/home/user/Music");
+      try {
+        await invoke<Track[]>("scan_folder", { path: selected });
+        // Reload library data after scan
+        const [newTracks, newAlbums, newArtists] = await Promise.all([
+          invoke<Track[]>("get_library"),
+          invoke<AlbumInfo[]>("get_albums"),
+          invoke<ArtistInfo[]>("get_artists"),
+        ]);
+        setTracks(newTracks);
+        setAlbums(newAlbums);
+        setArtists(newArtists);
+        setLibraryPath(selected);
+      } finally {
+        setIsScanning(false);
+      }
+    } catch (err) {
+      console.error("Import failed:", err);
       setIsScanning(false);
     }
-  }, [tracks]);
+  }, []);
+
+  const handleRescan = useCallback(async () => {
+    if (!libraryPath) return;
+    setIsScanning(true);
+    try {
+      await invoke<Track[]>("rescan_library");
+      const [newTracks, newAlbums, newArtists] = await Promise.all([
+        invoke<Track[]>("get_library"),
+        invoke<AlbumInfo[]>("get_albums"),
+        invoke<ArtistInfo[]>("get_artists"),
+      ]);
+      setTracks(newTracks);
+      setAlbums(newAlbums);
+      setArtists(newArtists);
+    } catch (err) {
+      console.error("Rescan failed:", err);
+    } finally {
+      setIsScanning(false);
+    }
+  }, [libraryPath]);
+
+  const handleSearch = useCallback(
+    async (query: string) => {
+      setSearchQuery(query);
+      if (!query.trim()) {
+        // Reload original library
+        try {
+          const newTracks = await invoke<Track[]>("get_library");
+          setTracks(newTracks);
+        } catch (err) {
+          console.error("Failed to reload library:", err);
+        }
+        return;
+      }
+      try {
+        const results = await invoke<Track[]>("search_tracks", {
+          query: query.trim(),
+        });
+        setTracks(results);
+      } catch (err) {
+        console.error("Search failed:", err);
+      }
+    },
+    [],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (trackId: string) => {
+      try {
+        const result = await invoke<boolean>("toggle_favorite", {
+          trackId,
+        });
+        if (result) {
+          setTracks((prev) =>
+            prev.map((t) =>
+              t.id === trackId ? { ...t, is_favorite: !t.is_favorite } : t,
+            ),
+          );
+        }
+      } catch (err) {
+        console.error("Failed to toggle favorite:", err);
+      }
+    },
+    [],
+  );
+
+  const handlePlayAlbum = useCallback(
+    (albumTracks: Track[], startIndex: number = 0) => {
+      if (albumTracks.length === 0) return;
+      setQueue(albumTracks);
+      setQueueIndex(startIndex);
+      setIsPlaying(true);
+    },
+    [],
+  );
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex h-full items-center justify-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+              <p className="text-sm text-muted">Loading library…</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    switch (currentView) {
+      case "settings":
+        return (
+          <SettingsView
+            libraryPath={libraryPath}
+            tracks={tracks}
+            albums={albums}
+            artists={artists}
+          />
+        );
+      case "albums":
+        return (
+          <AlbumView
+            albums={albums}
+            tracks={tracks}
+            onPlayAlbum={handlePlayAlbum}
+            currentTrackId={currentTrack?.id ?? null}
+          />
+        );
+      case "artists":
+        return (
+          <ArtistView
+            artists={artists}
+            tracks={tracks}
+            onPlayTrack={handlePlayTrack}
+          />
+        );
+      default:
+        return (
+          <LibraryView
+            tracks={tracks}
+            onPlay={handlePlayTrack}
+            onImport={handleImport}
+            onRescan={handleRescan}
+            currentTrackId={currentTrack?.id ?? null}
+            isPlaying={isPlaying}
+            searchQuery={searchQuery}
+            onSearchChange={handleSearch}
+            view={currentView}
+            isScanning={isScanning}
+            isLoading={isLoading}
+            onToggleFavorite={handleToggleFavorite}
+            hasLibraryPath={!!libraryPath}
+          />
+        );
+    }
+  };
+
+  const currentArtworkUri =
+    currentTrack && currentTrack.has_artwork
+      ? artworkCache[currentTrack.id] ?? null
+      : null;
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-surface">
@@ -178,23 +374,11 @@ export default function App() {
           currentView={currentView}
           onNavigate={setCurrentView}
           trackCount={tracks.length}
+          albumCount={albums.length}
+          artistCount={artists.length}
         />
 
-        {currentView === "settings" ? (
-          <SettingsView libraryPath={libraryPath} />
-        ) : (
-          <LibraryView
-            tracks={tracks}
-            onPlay={handlePlayTrack}
-            onImport={handleImport}
-            currentTrackId={currentTrack?.id ?? null}
-            isPlaying={isPlaying}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            view={currentView}
-            isScanning={isScanning}
-          />
-        )}
+        {renderContent()}
       </div>
 
       <PlaybackBar
@@ -206,6 +390,7 @@ export default function App() {
         onNext={handleNext}
         onPrevious={handlePrevious}
         onSeek={handleSeek}
+        artworkUri={currentArtworkUri}
       />
     </div>
   );
