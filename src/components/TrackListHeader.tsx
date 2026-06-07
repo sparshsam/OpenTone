@@ -1,4 +1,4 @@
-import { type View } from "@/types/music";
+import { type ReactNode } from "react";
 
 interface TrackListHeaderProps {
   trackCount: number;
@@ -6,18 +6,10 @@ interface TrackListHeaderProps {
   onRescan: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  view: View;
   isScanning: boolean;
   hasLibraryPath: boolean;
+  children?: ReactNode;
 }
-
-const viewLabels: Record<View, string> = {
-  library: "Library",
-  tracks: "Tracks",
-  albums: "Albums",
-  artists: "Artists",
-  settings: "Settings",
-};
 
 export default function TrackListHeader({
   trackCount,
@@ -25,59 +17,57 @@ export default function TrackListHeader({
   onRescan,
   searchQuery,
   onSearchChange,
-  view,
   isScanning,
   hasLibraryPath,
+  children,
 }: TrackListHeaderProps) {
   return (
-    <div className="flex items-center justify-between border-b border-border px-6 py-3">
-      <div className="flex items-center gap-4">
-        <div>
-          <h1 className="text-base font-semibold text-text">{viewLabels[view]}</h1>
-          {trackCount > 0 && (
-            <p className="text-xs text-muted">
-              {trackCount} track{trackCount === 1 ? "" : "s"}
-            </p>
+    <div className="flex items-center gap-3 border-b border-border px-4 py-2">
+      <h1 className="text-base font-semibold text-text">Library</h1>
+      <span className="text-xs text-muted">
+        {trackCount} track{trackCount === 1 ? "" : "s"}
+      </span>
+
+      <div className="ml-auto flex items-center gap-2">
+        {children}
+
+        {/* Search */}
+        <div className="relative">
+          <input
+            id="library-search"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search…"
+            className="w-48 rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-xs text-text placeholder-muted/50 outline-none transition-colors focus:border-accent"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted/50 hover:text-text"
+            >
+              ✕
+            </button>
           )}
         </div>
-        {isScanning && (
-          <div className="flex items-center gap-2">
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-accent border-t-transparent" />
-            <span className="text-xs text-accent">Scanning…</span>
-          </div>
-        )}
-      </div>
 
-      <div className="flex items-center gap-3">
-        {/* Search */}
-        <input
-          type="text"
-          placeholder="Search tracks, artists, albums…"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-56 rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-sm text-text placeholder-muted outline-none transition-colors focus:border-accent"
-        />
+        <button
+          onClick={onImport}
+          disabled={isScanning}
+          className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+        >
+          {isScanning ? "Importing…" : "Import"}
+        </button>
 
-        {/* Rescan button — only visible when library already imported */}
         {hasLibraryPath && (
           <button
             onClick={onRescan}
             disabled={isScanning}
-            className="rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-sm text-muted transition-colors hover:bg-surface-hover hover:text-text disabled:opacity-50"
-            title="Rescan library for new and changed files"
+            className="rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
           >
-            ↻ Rescan
+            Rescan
           </button>
         )}
-
-        {/* Import button */}
-        <button
-          onClick={onImport}
-          disabled={isScanning}
-          className="rounded-lg bg-accent px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-        >
-          {isScanning ? "Scanning…" : hasLibraryPath ? "Import folder" : "Import"}
-        </button>
       </div>
     </div>
   );

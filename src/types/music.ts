@@ -35,6 +35,14 @@ export interface ArtistInfo {
   track_count: number;
 }
 
+export interface PlaylistInfo {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  track_count: number;
+}
+
 export interface ScanProgress {
   scanned: number;
   found: number;
@@ -47,6 +55,8 @@ export type View =
   | "tracks"
   | "albums"
   | "artists"
+  | "playlists"
+  | "playlist-detail"
   | "settings";
 
 export interface QueueItem {

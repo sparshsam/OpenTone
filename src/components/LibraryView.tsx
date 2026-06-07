@@ -1,4 +1,5 @@
-import { type Track, type View } from "@/types/music";
+import { useState, useMemo } from "react";
+import { type Track } from "@/types/music";
 import TrackList from "./TrackList";
 import TrackListHeader from "./TrackListHeader";
 
@@ -11,11 +12,11 @@ interface LibraryViewProps {
   isPlaying: boolean;
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  view: View;
   isScanning: boolean;
   isLoading: boolean;
   onToggleFavorite: (trackId: string) => void;
   hasLibraryPath: boolean;
+  importError: string | null;
 }
 
 export default function LibraryView({
@@ -27,12 +28,21 @@ export default function LibraryView({
   isPlaying,
   searchQuery,
   onSearchChange,
-  view,
   isScanning,
   isLoading,
   onToggleFavorite,
   hasLibraryPath,
+  importError,
 }: LibraryViewProps) {
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+
+  const displayedTracks = useMemo(() => {
+    if (showFavoritesOnly) {
+      return tracks.filter((t) => t.is_favorite);
+    }
+    return tracks;
+  }, [tracks, showFavoritesOnly]);
+
   if (isLoading) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
@@ -42,7 +52,6 @@ export default function LibraryView({
           onRescan={onRescan}
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
-          view={view}
           isScanning={false}
           hasLibraryPath={hasLibraryPath}
         />
@@ -59,18 +68,35 @@ export default function LibraryView({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <TrackListHeader
-        trackCount={tracks.length}
+        trackCount={displayedTracks.length}
         onImport={onImport}
         onRescan={onRescan}
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
-        view={view}
         isScanning={isScanning}
         hasLibraryPath={hasLibraryPath}
-      />
+      >
+        <button
+          onClick={() => setShowFavoritesOnly((p) => !p)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+            showFavoritesOnly
+              ? "bg-accent text-white"
+              : "bg-surface-hover text-muted hover:text-text"
+          }`}
+          title="Show favorites only"
+        >
+          ★ Favorites
+        </button>
+      </TrackListHeader>
+
+      {importError && (
+        <div className="mx-4 mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-400">
+          {importError}
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto">
-        {tracks.length === 0 ? (
+        {displayedTracks.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-6 px-8 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-surface-raised">
               <svg viewBox="0 0 64 64" className="h-10 w-10 text-muted" fill="none">
@@ -80,25 +106,33 @@ export default function LibraryView({
               </svg>
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-text">Your music library is empty</h2>
+              <h2 className="text-lg font-semibold text-text">
+                {showFavoritesOnly
+                  ? "No favorite tracks yet"
+                  : "Your music library is empty"}
+              </h2>
               <p className="mt-1 max-w-sm text-sm text-muted">
-                Import a folder of music files to get started. OpenTone supports MP3, FLAC, WAV, AAC, M4A, and OGG.
+                {showFavoritesOnly
+                  ? "Star tracks to add them to your favorites."
+                  : "Import a folder of music files to get started. OpenTone supports MP3, FLAC, WAV, AAC, M4A, and OGG."}
               </p>
             </div>
-            <button
-              onClick={onImport}
-              disabled={isScanning}
-              className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-            >
-              {isScanning ? "Importing…" : "Import music folder"}
-            </button>
+            {!showFavoritesOnly && (
+              <button
+                onClick={onImport}
+                disabled={isScanning}
+                className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+              >
+                {isScanning ? "Importing…" : "Import music folder"}
+              </button>
+            )}
             <p className="mt-4 text-[11px] text-muted/50">
               OpenTone does not provide music. You are importing your own legally obtained files.
             </p>
           </div>
         ) : (
           <TrackList
-            tracks={tracks}
+            tracks={displayedTracks}
             onPlay={onPlay}
             currentTrackId={currentTrackId}
             isPlaying={isPlaying}

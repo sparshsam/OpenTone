@@ -5,6 +5,7 @@ import {
   type Track,
   type AlbumInfo,
   type ArtistInfo,
+  type PlaylistInfo,
   type View,
 } from "@/types/music";
 import Sidebar from "@/components/Sidebar";
@@ -12,6 +13,9 @@ import LibraryView from "@/components/LibraryView";
 import AlbumView from "@/components/AlbumView";
 import ArtistView from "@/components/ArtistView";
 import SettingsView from "@/components/SettingsView";
+import PlaylistListView from "@/components/PlaylistListView";
+import PlaylistDetailView from "@/components/PlaylistDetailView";
+import AddToPlaylistModal from "@/components/AddToPlaylistModal";
 import PlaybackBar from "@/components/PlaybackBar";
 
 export default function App() {
@@ -19,11 +23,13 @@ export default function App() {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [albums, setAlbums] = useState<AlbumInfo[]>([]);
   const [artists, setArtists] = useState<ArtistInfo[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [libraryPath, setLibraryPath] = useState<string | null>(null);
   const [artworkCache, setArtworkCache] = useState<Record<string, string>>({});
+  const [importError, setImportError] = useState<string | null>(null);
 
   // Playback state
   const [queue, setQueue] = useState<Track[]>([]);
@@ -31,6 +37,10 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Playlist state
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+  const [addToPlaylistTrack, setAddToPlaylistTrack] = useState<Track | null>(null);
 
   const currentTrack =
     queueIndex >= 0 && queueIndex < queue.length
@@ -41,16 +51,18 @@ export default function App() {
   useEffect(() => {
     async function loadLibrary() {
       try {
-        const [loadedTracks, loadedAlbums, loadedArtists, settings] =
+        const [loadedTracks, loadedAlbums, loadedArtists, loadedPlaylists, settings] =
           await Promise.all([
             invoke<Track[]>("get_library"),
             invoke<AlbumInfo[]>("get_albums"),
             invoke<ArtistInfo[]>("get_artists"),
+            invoke<PlaylistInfo[]>("get_playlists"),
             invoke<Record<string, string>>("get_settings"),
           ]);
         setTracks(loadedTracks);
         setAlbums(loadedAlbums);
         setArtists(loadedArtists);
+        setPlaylists(loadedPlaylists);
         if (settings.library_path) {
           setLibraryPath(settings.library_path);
         }
@@ -73,6 +85,7 @@ export default function App() {
       setQueueIndex((prev) => {
         const next = prev + 1;
         if (next < queue.length) {
+          setIsPlaying(true);
           return next;
         }
         setIsPlaying(false);
@@ -119,6 +132,60 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+
+      switch (e.key) {
+        case " ":
+          e.preventDefault();
+          if (!isInput && currentTrack) {
+            setIsPlaying((p) => !p);
+          }
+          break;
+        case "ArrowLeft":
+        case "j":
+        case "J":
+          if (!isInput) {
+            e.preventDefault();
+            handlePrevious();
+          }
+          break;
+        case "ArrowRight":
+        case "k":
+        case "K":
+          if (!isInput) {
+            e.preventDefault();
+            handleNext();
+          }
+          break;
+        case "/":
+          if (!isInput) {
+            e.preventDefault();
+            setCurrentView("library");
+            // Focus search input after view switch
+            setTimeout(() => {
+              const input = document.getElementById("library-search") as HTMLInputElement;
+              if (input) input.focus();
+            }, 50);
+          }
+          break;
+        case "Escape":
+          if (searchQuery) {
+            setSearchQuery("");
+          } else if (isInput) {
+            (target as HTMLInputElement).blur();
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentTrack, searchQuery]);
+
   const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
     setIsPlaying((p) => !p);
@@ -126,7 +193,14 @@ export default function App() {
 
   const handleNext = useCallback(() => {
     if (queue.length === 0) return;
-    setQueueIndex((prev) => Math.min(prev + 1, queue.length - 1));
+    setQueueIndex((prev) => {
+      const next = prev + 1;
+      if (next < queue.length) {
+        setIsPlaying(true);
+        return next;
+      }
+      return prev;
+    });
   }, [queue]);
 
   const handlePrevious = useCallback(() => {
@@ -196,6 +270,7 @@ export default function App() {
 
   const handleImport = useCallback(async () => {
     try {
+      setImportError(null);
       const selected = await open({
         directory: true,
         multiple: false,
@@ -206,7 +281,6 @@ export default function App() {
       setIsScanning(true);
       try {
         await invoke<Track[]>("scan_folder", { path: selected });
-        // Reload library data after scan
         const [newTracks, newAlbums, newArtists] = await Promise.all([
           invoke<Track[]>("get_library"),
           invoke<AlbumInfo[]>("get_albums"),
@@ -216,11 +290,13 @@ export default function App() {
         setAlbums(newAlbums);
         setArtists(newArtists);
         setLibraryPath(selected);
+      } catch (err) {
+        setImportError(`Import failed: ${err}`);
       } finally {
         setIsScanning(false);
       }
     } catch (err) {
-      console.error("Import failed:", err);
+      setImportError(`Folder selection failed: ${err}`);
       setIsScanning(false);
     }
   }, []);
@@ -228,6 +304,7 @@ export default function App() {
   const handleRescan = useCallback(async () => {
     if (!libraryPath) return;
     setIsScanning(true);
+    setImportError(null);
     try {
       await invoke<Track[]>("rescan_library");
       const [newTracks, newAlbums, newArtists] = await Promise.all([
@@ -239,7 +316,7 @@ export default function App() {
       setAlbums(newAlbums);
       setArtists(newArtists);
     } catch (err) {
-      console.error("Rescan failed:", err);
+      setImportError(`Rescan failed: ${err}`);
     } finally {
       setIsScanning(false);
     }
@@ -249,7 +326,6 @@ export default function App() {
     async (query: string) => {
       setSearchQuery(query);
       if (!query.trim()) {
-        // Reload original library
         try {
           const newTracks = await invoke<Track[]>("get_library");
           setTracks(newTracks);
@@ -300,6 +376,28 @@ export default function App() {
     [],
   );
 
+  // Playlist handlers
+  const loadPlaylists = useCallback(async () => {
+    try {
+      const result = await invoke<PlaylistInfo[]>("get_playlists");
+      setPlaylists(result);
+    } catch (err) {
+      console.error("Failed to load playlists:", err);
+    }
+  }, []);
+
+  const handlePlaylistClick = useCallback((id: string) => {
+    setSelectedPlaylistId(id);
+    setCurrentView("playlist-detail");
+  }, []);
+
+  const handleNavigate = useCallback((view: View) => {
+    setCurrentView(view);
+    if (view !== "playlist-detail") {
+      setSelectedPlaylistId(null);
+    }
+  }, []);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -341,6 +439,41 @@ export default function App() {
             onPlayTrack={handlePlayTrack}
           />
         );
+      case "playlists":
+        return (
+          <PlaylistListView
+            playlists={playlists}
+            onPlaylistClick={handlePlaylistClick}
+            onPlaylistsChanged={loadPlaylists}
+            activePlaylistId={selectedPlaylistId}
+          />
+        );
+      case "playlist-detail":
+        const activePlaylist = playlists.find((p) => p.id === selectedPlaylistId);
+        if (!activePlaylist) {
+          return (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex h-full items-center justify-center">
+                <p className="text-sm text-muted">Playlist not found.</p>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <PlaylistDetailView
+            playlist={activePlaylist}
+            onPlay={handlePlayTrack}
+            currentTrackId={currentTrack?.id ?? null}
+            isPlaying={isPlaying}
+            onToggleFavorite={handleToggleFavorite}
+            onBack={() => {
+              setCurrentView("playlists");
+              setSelectedPlaylistId(null);
+              loadPlaylists();
+            }}
+            onPlaylistChanged={loadPlaylists}
+          />
+        );
       default:
         return (
           <LibraryView
@@ -352,11 +485,11 @@ export default function App() {
             isPlaying={isPlaying}
             searchQuery={searchQuery}
             onSearchChange={handleSearch}
-            view={currentView}
             isScanning={isScanning}
             isLoading={isLoading}
             onToggleFavorite={handleToggleFavorite}
             hasLibraryPath={!!libraryPath}
+            importError={importError}
           />
         );
     }
@@ -372,10 +505,11 @@ export default function App() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
           currentView={currentView}
-          onNavigate={setCurrentView}
+          onNavigate={handleNavigate}
           trackCount={tracks.length}
           albumCount={albums.length}
           artistCount={artists.length}
+          playlistCount={playlists.length}
         />
 
         {renderContent()}
@@ -391,7 +525,19 @@ export default function App() {
         onPrevious={handlePrevious}
         onSeek={handleSeek}
         artworkUri={currentArtworkUri}
+        queueLength={queue.length}
+        queueIndex={queueIndex}
       />
+
+      {/* Add to playlist modal */}
+      {addToPlaylistTrack && (
+        <AddToPlaylistModal
+          trackId={addToPlaylistTrack.id}
+          trackTitle={addToPlaylistTrack.title}
+          onClose={() => setAddToPlaylistTrack(null)}
+          onAdded={loadPlaylists}
+        />
+      )}
     </div>
   );
 }

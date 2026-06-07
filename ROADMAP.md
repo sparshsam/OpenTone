@@ -8,38 +8,42 @@
 - [x] Album artwork extraction, caching (256×256 PNG), and display
 - [x] Audio playback engine (Rust-based)
 - [x] Library views: track list, album grid, artist expandable
-- [x] Sortable track columns
-- [x] Search across title, artist, album
-- [x] Favorite toggle per track
-- [x] Rescan support (re-index + stale track pruning)
-- [x] Settings persistence
-- [x] Basic playback controls (play, pause, skip, seek, volume)
-- [x] Minimal, calm UI
+- [x] Sortable track columns with search and favorites
+- [x] Playlist management (CRUD + add/remove tracks)
+- [x] Keyboard shortcuts (play/pause, prev/next, search, escape)
+- [x] Favorites filtering, queue display, disabled states
 
-## Phase 2 — Playlists & Metadata Management
-- [ ] Playlist creation, editing, and management
-- [ ] Drag-and-drop track reordering in queue and playlists
-- [ ] Metadata editing (tag wrangling — edit title, artist, album in-app)
-- [ ] Last.fm / ListenBrainz scrobbling integration
-- [ ] Queue management with drag-to-reorder
-- [ ] Gapless playback
-- [ ] Multi-artist/file-level artwork selection
-- [ ] Import from iTunes/CSV playlists
-- [ ] Keyboard shortcuts for all major actions
+## Phase 2 — Desktop Player Refinement
+- [ ] Native playback via Tauri asset protocol (`tauri://localhost`)
+- [ ] Playlist reordering (drag-and-drop or move up/down)
+- [ ] Keyboard shortcuts for volume control
+- [ ] Track metadata editing
+- [ ] Smart playlists (recently added, most played, favorites)
+- [ ] Multi-window support (mini-player)
+- [ ] System media controls (media keys, notification)
+- [ ] _Packaged desktop installer_ (`npm run tauri build`)
 
-## Phase 3 — Mobile Companion & Extended Platform
-- [ ] Companion mobile app (local network sync)
-- [ ] Optional BYO cloud storage integration (user-provided S3, WebDAV, etc.)
-- [ ] Offline playback sync between desktop and mobile
-- [ ] Remote control from mobile app
-- [ ] Cross-device play state synchronization
-- [ ] Plugin system for extensibility
-- [ ] Dark/light theme toggle
-- [ ] Equalizer / audio effects
+## Phase 3 — Library Management
+- [ ] Duplicate detection and merging
+- [ ] Batch metadata editing
+- [ ] Album art management (replace, remove)
+- [ ] Folder watch / auto-import
+- [ ] Import progress with file-by-file status
+- [ ] File renaming / organization tools
 
-## Non-Goals (explicitly out of scope)
-- Music streaming or content delivery
-- Social features or public sharing
-- DRM or proprietary format support
-- Cloud-hosted user accounts
-- Algorithmic recommendations or auto-generated playlists
+## Phase 4 — Advanced Features
+- [ ] Playlist export/import (M3U, PLS)
+- [ ] ReplayGain / volume normalization
+- [ ] Crossfade and gapless playback
+- [ ] EQ and audio effects
+- [ ] Last.fm scrobbling
+- [ ] Export library statistics
+- [ ] Backup / restore
+
+## Non-Goals (Will Never Add)
+- Streaming service integrations (Spotify, Apple Music, etc.)
+- Cloud sync or accounts
+- AI recommendations or discovery features
+- Social features or sharing
+- Crypto/web3 integration
+- Vercel deployment (the app is a desktop application, not a web service)

@@ -53,6 +53,15 @@ pub struct ArtistInfo {
     pub track_count: i32,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct PlaylistInfo {
+    pub id: String,
+    pub name: String,
+    pub created_at: String,
+    pub updated_at: String,
+    pub track_count: i32,
+}
+
 // ---------------------------------------------------------------------------
 // Application state
 // ---------------------------------------------------------------------------
@@ -139,7 +148,7 @@ fn index_folder(
 }
 
 // ---------------------------------------------------------------------------
-// Tauri commands
+// Tauri commands - Library
 // ---------------------------------------------------------------------------
 
 /// Recursively scan a folder, extract real metadata with `lofty`, store in
@@ -256,7 +265,6 @@ fn rescan_library(state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
         return Ok(Vec::new());
     }
 
-    // Collect all currently valid file paths so we can prune stale entries
     let mut all_valid_paths: Vec<String> = Vec::new();
     let mut all_tracks: Vec<TrackInfo> = Vec::new();
 
@@ -274,7 +282,6 @@ fn rescan_library(state: State<AppState>) -> Result<Vec<TrackInfo>, String> {
         }
     }
 
-    // Remove tracks whose paths are no longer valid
     let deleted = db::remove_missing_tracks_by_paths(&conn, &all_valid_paths)?;
     if deleted > 0 {
         eprintln!("Removed {} stale track(s) from the library.", deleted);
@@ -315,6 +322,95 @@ fn get_supported_formats() -> Vec<String> {
 }
 
 // ---------------------------------------------------------------------------
+// Tauri commands - Playlists
+// ---------------------------------------------------------------------------
+
+/// Get all playlists.
+#[tauri::command]
+fn get_playlists(state: State<AppState>) -> Result<Vec<PlaylistInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_playlists(&conn)
+}
+
+/// Create a new playlist.
+#[tauri::command]
+fn create_playlist(name: String, state: State<AppState>) -> Result<String, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::create_playlist(&conn, &name)
+}
+
+/// Rename a playlist.
+#[tauri::command]
+fn rename_playlist(
+    playlist_id: String,
+    name: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::rename_playlist(&conn, &playlist_id, &name)
+}
+
+/// Delete a playlist.
+#[tauri::command]
+fn delete_playlist(playlist_id: String, state: State<AppState>) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::delete_playlist(&conn, &playlist_id)
+}
+
+/// Add a track to a playlist.
+#[tauri::command]
+fn add_to_playlist(
+    playlist_id: String,
+    track_id: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::add_to_playlist(&conn, &playlist_id, &track_id)
+}
+
+/// Remove a track from a playlist.
+#[tauri::command]
+fn remove_from_playlist(
+    playlist_id: String,
+    track_id: String,
+    state: State<AppState>,
+) -> Result<(), String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::remove_from_playlist(&conn, &playlist_id, &track_id)
+}
+
+/// Get all tracks in a playlist.
+#[tauri::command]
+fn get_playlist_tracks(
+    playlist_id: String,
+    state: State<AppState>,
+) -> Result<Vec<TrackInfo>, String> {
+    let conn = state
+        .db
+        .lock()
+        .map_err(|e| format!("Failed to acquire database lock: {}", e))?;
+    db::get_playlist_tracks(&conn, &playlist_id)
+}
+
+// ---------------------------------------------------------------------------
 // Application entrypoint
 // ---------------------------------------------------------------------------
 
@@ -324,7 +420,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            // Resolve the canonical app data directory
             let app_dir = app
                 .path()
                 .app_data_dir()
@@ -336,7 +431,6 @@ pub fn run() {
             let conn = rusqlite::Connection::open(&db_path)
                 .map_err(|e| format!("Failed to open SQLite database: {}", e))?;
 
-            // Enable WAL mode for better concurrent read performance
             conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
                 .map_err(|e| format!("Failed to set pragmas: {}", e))?;
 
@@ -360,6 +454,13 @@ pub fn run() {
             get_settings,
             set_setting,
             get_supported_formats,
+            get_playlists,
+            create_playlist,
+            rename_playlist,
+            delete_playlist,
+            add_to_playlist,
+            remove_from_playlist,
+            get_playlist_tracks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
