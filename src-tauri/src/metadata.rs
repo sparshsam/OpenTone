@@ -1,4 +1,7 @@
+use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::read_from_path;
+use lofty::tag::Accessor;
+use lofty::tag::ItemKey;
 use std::path::Path;
 use std::time::UNIX_EPOCH;
 
@@ -54,11 +57,11 @@ pub fn extract_metadata(file_path: &Path) -> Result<TrackInfo, String> {
 
     // Try primary tag first
     if let Some(tag) = tagged_file.primary_tag() {
-        title = tag.title().unwrap_or("").to_string();
-        artist = tag.artist().unwrap_or("").to_string();
-        album = tag.album().unwrap_or("").to_string();
+        title = tag.title().unwrap_or_default().to_string();
+        artist = tag.artist().unwrap_or_default().to_string();
+        album = tag.album().unwrap_or_default().to_string();
         album_artist = tag
-            .album_artist()
+            .get_string(&ItemKey::AlbumArtist)
             .unwrap_or("")
             .to_string();
         track_number = tag.track().unwrap_or(0) as i32;

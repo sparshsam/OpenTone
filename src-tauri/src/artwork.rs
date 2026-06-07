@@ -1,4 +1,5 @@
 use base64::Engine;
+use lofty::file::TaggedFileExt;
 use lofty::read_from_path;
 use std::fs;
 use std::path::{Path, PathBuf};

@@ -424,6 +424,7 @@ pub fn remove_missing_tracks_by_paths(
 }
 
 /// Get a setting value.
+#[allow(dead_code)]
 pub fn get_setting(conn: &Connection, key: &str) -> Result<Option<String>, String> {
     let mut stmt = conn
         .prepare("SELECT value FROM settings WHERE key = ?1")
