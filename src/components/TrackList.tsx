@@ -13,10 +13,14 @@ interface TrackListProps {
   isPlaying: boolean;
   searchQuery: string;
   onToggleFavorite: (trackId: string) => void;
+  showAddToPlaylist?: boolean;
+  onAddToPlaylist?: (track: Track) => void;
+  onRemoveFromPlaylist?: (trackId: string) => void;
+  showRemoveFromPlaylist?: boolean;
 }
 
 interface ColumnDef {
-  key: SortField;
+  key: SortField | "actions";
   label: string;
   sortable: boolean;
   className: string;
@@ -31,6 +35,7 @@ const columns: ColumnDef[] = [
   { key: "year", label: "Year", sortable: true, className: "w-16 px-2 py-2 text-right" },
   { key: "format", label: "Format", sortable: true, className: "w-16 px-2 py-2 text-center" },
   { key: "file_size", label: "Size", sortable: true, className: "w-20 px-3 py-2 text-right" },
+  { key: "actions", label: "", sortable: false, className: "w-12 px-2 py-2 text-right" },
 ];
 
 function formatDuration(seconds: number): string {
@@ -52,6 +57,10 @@ interface TrackRowProps {
   onPlay: (track: Track) => void;
   onToggleFavorite: (trackId: string) => void;
   artworkCache: Record<string, string>;
+  showAddToPlaylist?: boolean;
+  onAddToPlaylist?: (track: Track) => void;
+  showRemoveFromPlaylist?: boolean;
+  onRemoveFromPlaylist?: (trackId: string) => void;
 }
 
 function TrackRow({
@@ -62,6 +71,10 @@ function TrackRow({
   onPlay,
   onToggleFavorite,
   artworkCache,
+  showAddToPlaylist,
+  onAddToPlaylist,
+  showRemoveFromPlaylist,
+  onRemoveFromPlaylist,
 }: TrackRowProps) {
   const artworkUri = track.has_artwork ? artworkCache[track.id] : null;
 
@@ -69,13 +82,13 @@ function TrackRow({
     <tr
       onClick={() => onPlay(track)}
       className={`cursor-pointer border-b border-border/50 transition-colors hover:bg-surface-raised ${
-        isCurrent ? "bg-surface-raised" : ""
+        isCurrent ? "bg-accent/5" : ""
       }`}
     >
       <td className="w-10 px-2 py-2 text-center">
         <div className="flex items-center justify-center gap-1.5">
           {isCurrent && isCurrentlyPlaying ? (
-            <span className="text-accent">♫</span>
+            <span className="text-accent animate-pulse">♫</span>
           ) : (
             <span className="text-muted">{index + 1}</span>
           )}
@@ -83,7 +96,6 @@ function TrackRow({
       </td>
       <td className="px-2 py-2">
         <div className="flex items-center gap-2">
-          {/* Artwork thumbnail */}
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded bg-surface-hover">
             {artworkUri ? (
               <img
@@ -139,6 +151,34 @@ function TrackRow({
           </button>
         </div>
       </td>
+      {showAddToPlaylist && onAddToPlaylist && (
+        <td className="w-10 px-2 py-2 text-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToPlaylist(track);
+            }}
+            className="text-xs text-muted transition-colors hover:text-accent"
+            title="Add to playlist"
+          >
+            +
+          </button>
+        </td>
+      )}
+      {showRemoveFromPlaylist && onRemoveFromPlaylist && (
+        <td className="w-10 px-2 py-2 text-center">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveFromPlaylist(track.id);
+            }}
+            className="text-xs text-muted transition-colors hover:text-red-400"
+            title="Remove from playlist"
+          >
+            ✕
+          </button>
+        </td>
+      )}
     </tr>
   );
 }
@@ -150,6 +190,10 @@ export default function TrackList({
   isPlaying,
   searchQuery,
   onToggleFavorite,
+  showAddToPlaylist,
+  onAddToPlaylist,
+  showRemoveFromPlaylist,
+  onRemoveFromPlaylist,
 }: TrackListProps) {
   const [sortField, setSortField] = useState<SortField>("track_number");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -167,7 +211,6 @@ export default function TrackList({
     [sortField],
   );
 
-  // Load artwork for visible tracks that have artwork
   const loadArtwork = useCallback(
     async (track: Track) => {
       if (!track.has_artwork || artworkCache[track.id]) return;
@@ -262,7 +305,7 @@ export default function TrackList({
                 className={`${col.className} font-medium ${
                   col.sortable ? "cursor-pointer select-none hover:text-subtle" : ""
                 }`}
-                onClick={() => col.sortable && handleSort(col.key)}
+                onClick={() => col.sortable && handleSort(col.key as SortField)}
               >
                 <span className="inline-flex items-center gap-1">
                   {col.label}
@@ -274,7 +317,6 @@ export default function TrackList({
                 </span>
               </th>
             ))}
-            <th className="w-8 px-2 py-2" />
           </tr>
         </thead>
         <tbody>
@@ -288,6 +330,10 @@ export default function TrackList({
               onPlay={onPlay}
               onToggleFavorite={onToggleFavorite}
               artworkCache={artworkCache}
+              showAddToPlaylist={showAddToPlaylist}
+              onAddToPlaylist={onAddToPlaylist}
+              showRemoveFromPlaylist={showRemoveFromPlaylist}
+              onRemoveFromPlaylist={onRemoveFromPlaylist}
             />
           ))}
         </tbody>

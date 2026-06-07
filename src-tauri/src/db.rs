@@ -1,7 +1,7 @@
 use rusqlite::{Connection, params};
 use std::collections::HashMap;
 
-use crate::{AlbumInfo, ArtistInfo, TrackInfo};
+use crate::{AlbumInfo, ArtistInfo, PlaylistInfo, TrackInfo};
 
 /// Initialize the database schema, creating all tables if they don't exist.
 pub fn initialize_db(conn: &Connection) -> Result<(), String> {
@@ -130,7 +130,7 @@ pub fn upsert_track(conn: &Connection, track: &TrackInfo) -> Result<(), String> 
     Ok(())
 }
 
-/// Update the `has_artwork` flag for a specific track.
+/// Update the has_artwork flag for a specific track.
 pub fn set_track_has_artwork(conn: &Connection, track_id: &str, has_artwork: bool) -> Result<(), String> {
     conn.execute(
         "UPDATE tracks SET has_artwork = ?1 WHERE id = ?2",
@@ -422,6 +422,192 @@ pub fn remove_missing_tracks_by_paths(
 
     Ok(deleted)
 }
+
+// ---------------------------------------------------------------------------
+// Playlist CRUD
+// ---------------------------------------------------------------------------
+
+/// Get all playlists with track counts.
+pub fn get_playlists(conn: &Connection) -> Result<Vec<PlaylistInfo>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT p.id, p.name, p.created_at, p.updated_at,
+                    COALESCE(cnt.track_count, 0) as track_count
+             FROM playlists p
+             LEFT JOIN (
+                SELECT playlist_id, COUNT(*) as track_count
+                FROM playlist_tracks
+                GROUP BY playlist_id
+             ) cnt ON p.id = cnt.playlist_id
+             ORDER BY p.updated_at DESC",
+        )
+        .map_err(|e| format!("Failed to prepare playlists query: {}", e))?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(PlaylistInfo {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                created_at: row.get(2)?,
+                updated_at: row.get(3)?,
+                track_count: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("Failed to query playlists: {}", e))?;
+
+    let mut playlists = Vec::new();
+    for row in rows {
+        playlists.push(row.map_err(|e| format!("Failed to read playlist row: {}", e))?);
+    }
+    Ok(playlists)
+}
+
+/// Create a new playlist. Returns the new playlist ID.
+pub fn create_playlist(conn: &Connection, name: &str) -> Result<String, String> {
+    let id = uuid::Uuid::new_v4().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "INSERT INTO playlists (id, name, created_at, updated_at) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, now, now],
+    )
+    .map_err(|e| format!("Failed to create playlist: {}", e))?;
+    Ok(id)
+}
+
+/// Rename an existing playlist.
+pub fn rename_playlist(conn: &Connection, playlist_id: &str, name: &str) -> Result<(), String> {
+    let now = chrono::Utc::now().to_rfc3339();
+    let updated = conn
+        .execute(
+            "UPDATE playlists SET name = ?1, updated_at = ?2 WHERE id = ?3",
+            params![name, now, playlist_id],
+        )
+        .map_err(|e| format!("Failed to rename playlist: {}", e))?;
+    if updated == 0 {
+        return Err(format!("Playlist '{}' not found", playlist_id));
+    }
+    Ok(())
+}
+
+/// Delete a playlist and all its track associations.
+pub fn delete_playlist(conn: &Connection, playlist_id: &str) -> Result<(), String> {
+    conn.execute(
+        "DELETE FROM playlist_tracks WHERE playlist_id = ?1",
+        params![playlist_id],
+    )
+    .map_err(|e| format!("Failed to remove playlist tracks: {}", e))?;
+
+    let deleted = conn
+        .execute(
+            "DELETE FROM playlists WHERE id = ?1",
+            params![playlist_id],
+        )
+        .map_err(|e| format!("Failed to delete playlist: {}", e))?;
+
+    if deleted == 0 {
+        return Err(format!("Playlist '{}' not found", playlist_id));
+    }
+    Ok(())
+}
+
+/// Add a track to a playlist at the next available position.
+pub fn add_to_playlist(conn: &Connection, playlist_id: &str, track_id: &str) -> Result<(), String> {
+    let next_pos: i32 = conn
+        .query_row(
+            "SELECT COALESCE(MAX(position), -1) + 1 FROM playlist_tracks WHERE playlist_id = ?1",
+            params![playlist_id],
+            |row| row.get(0),
+        )
+        .map_err(|e| format!("Failed to get next position: {}", e))?;
+
+    conn.execute(
+        "INSERT INTO playlist_tracks (playlist_id, track_id, position) VALUES (?1, ?2, ?3)",
+        params![playlist_id, track_id, next_pos],
+    )
+    .map_err(|e| format!("Failed to add track to playlist: {}", e))?;
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let _ = conn.execute(
+        "UPDATE playlists SET updated_at = ?1 WHERE id = ?2",
+        params![now, playlist_id],
+    );
+
+    Ok(())
+}
+
+/// Remove a track from a playlist.
+pub fn remove_from_playlist(conn: &Connection, playlist_id: &str, track_id: &str) -> Result<(), String> {
+    let deleted = conn
+        .execute(
+            "DELETE FROM playlist_tracks WHERE playlist_id = ?1 AND track_id = ?2",
+            params![playlist_id, track_id],
+        )
+        .map_err(|e| format!("Failed to remove track from playlist: {}", e))?;
+
+    if deleted == 0 {
+        return Err(format!("Track '{}' not found in playlist '{}'", track_id, playlist_id));
+    }
+
+    let now = chrono::Utc::now().to_rfc3339();
+    let _ = conn.execute(
+        "UPDATE playlists SET updated_at = ?1 WHERE id = ?2",
+        params![now, playlist_id],
+    );
+
+    Ok(())
+}
+
+/// Get tracks in a playlist ordered by position.
+pub fn get_playlist_tracks(conn: &Connection, playlist_id: &str) -> Result<Vec<TrackInfo>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT t.id, t.path, t.title, t.artist, t.album, t.album_artist,
+                    t.track_number, t.disc_number, t.year, t.duration,
+                    t.format, t.bitrate, t.sample_rate, t.file_size, t.modified_at,
+                    t.is_favorite, t.has_artwork
+             FROM tracks t
+             INNER JOIN playlist_tracks pt ON t.id = pt.track_id
+             WHERE pt.playlist_id = ?1
+             ORDER BY pt.position",
+        )
+        .map_err(|e| format!("Failed to prepare playlist tracks query: {}", e))?;
+
+    let rows = stmt
+        .query_map(params![playlist_id], |row| {
+            let is_fav: i32 = row.get(15)?;
+            let has_art: i32 = row.get(16)?;
+            Ok(TrackInfo {
+                id: row.get(0)?,
+                path: row.get(1)?,
+                title: row.get(2)?,
+                artist: row.get(3)?,
+                album: row.get(4)?,
+                album_artist: row.get(5)?,
+                track_number: row.get(6)?,
+                disc_number: row.get(7)?,
+                year: row.get(8)?,
+                duration: row.get(9)?,
+                format: row.get(10)?,
+                bitrate: row.get(11)?,
+                sample_rate: row.get(12)?,
+                file_size: row.get::<_, i64>(13)? as u64,
+                modified_at: row.get(14)?,
+                is_favorite: is_fav != 0,
+                has_artwork: has_art != 0,
+            })
+        })
+        .map_err(|e| format!("Failed to query playlist tracks: {}", e))?;
+
+    let mut tracks = Vec::new();
+    for row in rows {
+        tracks.push(row.map_err(|e| format!("Failed to read playlist track row: {}", e))?);
+    }
+    Ok(tracks)
+}
+
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
 
 /// Get a setting value.
 #[allow(dead_code)]

@@ -6,6 +6,7 @@ interface SidebarProps {
   trackCount: number;
   albumCount: number;
   artistCount: number;
+  playlistCount: number;
 }
 
 const navItems: { view: View; label: string; icon: string }[] = [
@@ -13,6 +14,7 @@ const navItems: { view: View; label: string; icon: string }[] = [
   { view: "tracks", label: "Tracks", icon: "♪" },
   { view: "albums", label: "Albums", icon: "♫" },
   { view: "artists", label: "Artists", icon: "♬" },
+  { view: "playlists", label: "Playlists", icon: "≡" },
 ];
 
 export default function Sidebar({
@@ -21,11 +23,13 @@ export default function Sidebar({
   trackCount,
   albumCount,
   artistCount,
+  playlistCount,
 }: SidebarProps) {
   const countMap: Partial<Record<View, number>> = {
     tracks: trackCount,
     albums: albumCount,
     artists: artistCount,
+    playlists: playlistCount,
   };
 
   return (
