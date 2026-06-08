@@ -10,10 +10,9 @@
 
 OpenTone is an offline-first, local-only music player. Because it does not connect to external servers or store user data in the cloud, the attack surface is minimal. However, we take security seriously.
 
-If you discover a security vulnerability, please **do not open a public issue**. Instead, contact the maintainers privately at:
+If you discover a security vulnerability, please **do not open a public issue**. Report it privately via:
 
-- **Email**: security@opentone.dev (placeholder — update before release)
-- **GitHub**: Open a [security advisory](https://github.com/<org>/OpenTone/security/advisories)
+- **GitHub**: Open a [security advisory](https://github.com/sparshsam/OpenTone/security/advisories)
 
 We will acknowledge receipt within 48 hours and provide an estimated timeline for a fix.
 

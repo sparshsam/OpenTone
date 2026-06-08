@@ -19,7 +19,7 @@ Thank you for your interest in contributing! OpenTone is an open-source, offline
    ```
 4. **Create a feature branch**:
    ```bash
-   git checkout -b feature/your-feature-name
+   git checkout -b feat/your-feature-name
    ```
 
 ## Reporting Issues
@@ -55,7 +55,7 @@ Thank you for your interest in contributing! OpenTone is an open-source, offline
 
 ## Commit Conventions
 
-We follow **Conventional Commits**:
+We follow **Conventional Commits** (imperative mood, ≤72 chars):
 
 ```
 <type>(<scope>): <description>
@@ -65,15 +65,15 @@ We follow **Conventional Commits**:
 ```
 
 ### Types
-- `feat` — A new feature
-- `fix` — A bug fix
-- `docs` — Documentation changes
-- `style` — Code style changes (formatting, etc.)
-- `refactor` — Code restructuring without feature/bug changes
-- `perf` — Performance improvements
-- `test` — Adding or updating tests
-- `chore` — Build tasks, tooling, dependencies
-- `ci` — CI/CD changes
+| `feat` — A new feature
+| `fix` — A bug fix
+| `docs` — Documentation changes
+| `refactor` — Code restructuring without feature/bug changes
+| `perf` — Performance improvements
+| `test` — Adding or updating tests
+| `chore` — Build tasks, tooling, dependencies
+| `ci` — CI/CD changes
+| `security` — Security fix
 
 ### Examples
 ```
