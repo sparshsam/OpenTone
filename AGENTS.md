@@ -2,28 +2,46 @@
 
 This file provides orientation for AI coding agents working on the OpenTone project.
 
-## Machine Context
+## Project Structure
 
-- **Repository location**: This repo lives on the **HP machine** (the user's personal workstation).
-- **HP role**: The HP machine is the **runtime and infrastructure node** — it runs builds, tests, and the application. It is **not** the primary development machine.
-- **Canonical workspace**: All work on this repository should be done from `~/repos/projects/OpenTone`.
+- **Frontend**: React 19 + TypeScript + Vite 6 + Tailwind CSS 4 (in `src/`)
+- **Backend**: Rust + Tauri v2 (in `src-tauri/`)
+- **Database**: SQLite via `rusqlite` (bundled)
+- **Metadata**: Extracted via the `lofty` crate
+- **Docs**: Architecture docs live in `docs/`
 
-## Before Starting Work
+## Development Workflow
 
-1. **Read MEMORY.md**: Consult the `ai-ops-command` MEMORY.md file for persistent project context, decisions, and ongoing work state. It contains critical context that may not be in this file.
-2. **Branch workflow**: This project follows the `feature/initial-opentone-scaffold` branch workflow. The primary working branch is `feature/initial-opentone-scaffold`. Do not commit directly to `main`.
-3. **Verify Git state**: Before making changes, check the current branch and ensure it is the correct feature branch.
+1. **Branch from `main`**: Create feature branches from `main`.
+2. **Pull Requests**: All changes go through PRs into `main`. Squash merge.
+3. **Quality gates**: Before committing, run:
+   - `npm run typecheck` (TypeScript check)
+   - `npm run build` (frontend build)
+   - `cargo check` (Rust compilation check)
+4. **Conventional commits**: Use `feat:`, `fix:`, `docs:`, `chore:` prefixes.
+5. **Versioning**: Follow semantic versioning (`vMAJOR.MINOR.PATCH`).
+6. **Releases**: Tagged releases (`v*`) trigger automated GitHub Actions builds.
 
-## Development Flow
+## Code Conventions
 
-1. Pull latest changes from the feature branch.
-2. Read `ai-ops-command` MEMORY.md for current task context.
-3. Make changes, commit with conventional commits.
-4. Push regularly to keep the remote in sync.
-5. Update MEMORY.md on significant progress or decisions.
+- React functional components with TypeScript interfaces
+- Rust backend uses Tauri commands with JSON serializable structs
+- SQLite schema changes must include migrations (use `db::initialize_db()`)
+- Keep the API surface minimal — prefer backend-side logic over frontend complexity
 
-## Key Contacts
+## Important Constraints
 
-- The `scripts/` directory contains helper scripts for building and testing.
-- Architecture documentation lives in `docs/`.
-- Product specifications live in `docs/product-spec.md`.
+- **No cloud dependencies**: OpenTone is offline-first. No accounts, no telemetry, no cloud sync.
+- **No streaming**: OpenTone does not provide music. Users bring their own files.
+- **Desktop-only**: OpenTone is a Tauri desktop app, not a web service. No Vercel/Netlify deployment.
+- **Privacy**: Zero data collection. Everything stays on the user's machine.
+
+## Documentation
+
+- `README.md` — Project overview and getting started
+- `CHANGELOG.md` — Version history
+- `ROADMAP.md` — Future plans
+- `docs/architecture.md` — Technical architecture
+- `docs/release-builds.md` — Release artifact documentation
+- `docs/product-spec.md` — Product specifications
+- `docs/legal-positioning.md` — Legal positioning and compliance
