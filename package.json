@@ -2,7 +2,7 @@
   "name": "opentone",
   "private": true,
   "version": "0.1.0-alpha",
-  "description": "OpenTone — offline-first personal music library and desktop player for music you own.",
+  "description": "Offline-first personal music library and desktop player for music you own.",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -36,5 +36,16 @@
     "typescript": "~5.7.0",
     "typescript-eslint": "^8.0.0",
     "vite": "^6.0.0"
-  }
+  },
+  "license": "MIT",
+  "author": "Sparsh Sam",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sparshsam/opentone.git"
+  },
+  "homepage": "https://github.com/sparshsam/opentone#readme",
+  "bugs": {
+    "url": "https://github.com/sparshsam/opentone/issues"
+  },
+  "keywords": []
 }
