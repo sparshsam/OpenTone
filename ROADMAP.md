@@ -1,34 +1,44 @@
-# Roadmap
+# OpenTone — Roadmap
 
-## Phase 1 — MVP Desktop Player (Current)
-- [x] Project scaffold (Tauri v2, React, TypeScript, Vite, Tailwind CSS)
-- [ ] Local file system scanning and indexing
-- [ ] Metadata extraction (ID3, Vorbis, etc.)
-- [ ] Audio playback engine (Rust-based)
-- [ ] Library view (tracks, albums, artists)
-- [ ] Basic playback controls (play, pause, skip, seek, volume)
-- [ ] SQLite database for persistent library state
-- [ ] Minimal, calm UI
+> Offline-first personal music library and desktop player.
 
-## Phase 2 — Playlists & Metadata Sync
-- [ ] Playlist creation, editing, and management
-- [ ] Drag-and-drop track reordering
-- [ ] Metadata editing (tag wrangling)
-- [ ] Last.fm / ListenBrainz scrobbling
-- [ ] Album art fetching and caching
-- [ ] Search and filter across library
-- [ ] Queue management
+## Current — v0.1 (June 2026)
 
-## Phase 3 — Mobile Companion & BYO Cloud Storage
-- [ ] Companion mobile app (local network sync)
-- [ ] Optional BYO cloud storage integration (user-provided S3, WebDAV, etc.)
-- [ ] Offline playback sync between desktop and mobile
-- [ ] Remote control from mobile app
-- [ ] Cross-device play state synchronization
-- [ ] Plugin system for extensibility
+Initial scaffold and architecture foundation.
 
-## Non-Goals (explicitly out of scope)
-- Music streaming or content delivery
-- Social features or public sharing
-- DRM or proprietary format support
-- Cloud-hosted user accounts
+- [x] Tauri v2 + React 19 + Vite project setup
+- [x] TypeScript strict mode configuration
+- [x] ESLint + Tailwind CSS v4 integration
+- [x] Project documentation (architecture, product spec, legal)
+- [x] Repository governance (LICENSE, CONTRIBUTING, SECURITY, etc.)
+- [x] CI/CD pipeline
+
+## Next — v0.2
+
+Core playback and library features.
+
+- [ ] Local music file import and scanning
+- [ ] Audio playback engine (Tauri FS + Web Audio)
+- [ ] Library view with sort and filter
+- [ ] Now-playing interface
+- [ ] Basic playlist management
+
+## Future — v0.3+
+
+- [ ] Metadata editing (ID3 tags)
+- [ ] Folder-based browsing
+- [ ] Keyboard shortcuts
+- [ ] Search
+- [ ] Dark mode
+- [ ] Mini-player mode
+- [ ] Linux packaging
+- [ ] macOS notarization
+- [ ] Windows installer
+
+## Non-goals
+
+- Streaming service integration (Spotify, Apple Music, etc.)
+- Cloud sync or remote access
+- DRM or encrypted formats
+- Social features
+- Mobile version

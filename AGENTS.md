@@ -1,29 +1,27 @@
-# AI Agent Instructions for OpenTone
+# OpenTone — AI Agent Instructions
 
-This file provides orientation for AI coding agents working on the OpenTone project.
+## Product Identity
 
-## Machine Context
+OpenTone is an offline-first personal music library and desktop player for music files you own. It is a native desktop application built with Tauri v2 + React 19.
 
-- **Repository location**: This repo lives on the **HP machine** (the user's personal workstation).
-- **HP role**: The HP machine is the **runtime and infrastructure node** — it runs builds, tests, and the application. It is **not** the primary development machine.
-- **Canonical workspace**: All work on this repository should be done from `~/repos/projects/OpenTone`.
+## Product Boundaries (Mandatory)
 
-## Before Starting Work
+1. **Offline-first.** Do not add cloud sync, streaming integration, or network-dependent features.
+2. **Local files only.** Music is accessed from the local filesystem via Tauri FS. No music APIs or external catalogs.
+3. **No DRM.** Only unencrypted audio formats (MP3, FLAC, etc.).
+4. **Privacy by design.** No telemetry, no accounts, no analytics.
+5. **Desktop-only.** Tauri targets macOS, Windows, Linux. No mobile or web.
 
-1. **Read MEMORY.md**: Consult the `ai-ops-command` MEMORY.md file for persistent project context, decisions, and ongoing work state. It contains critical context that may not be in this file.
-2. **Branch workflow**: This project follows the `feature/initial-opentone-scaffold` branch workflow. The primary working branch is `feature/initial-opentone-scaffold`. Do not commit directly to `main`.
-3. **Verify Git state**: Before making changes, check the current branch and ensure it is the correct feature branch.
+## Architecture Rules
 
-## Development Flow
+- **Tauri IPC boundary** — Rust commands handle filesystem access; React handles UI. Keep IPC commands focused.
+- **No cloud infrastructure** — No backend, no database, no API keys needed.
+- **TypeScript strict** — All frontend code must pass strict TypeScript checks.
 
-1. Pull latest changes from the feature branch.
-2. Read `ai-ops-command` MEMORY.md for current task context.
-3. Make changes, commit with conventional commits.
-4. Push regularly to keep the remote in sync.
-5. Update MEMORY.md on significant progress or decisions.
+## Context
 
-## Key Contacts
+This project is on the `feature/initial-opentone-scaffold` branch. The `main` branch exists remotely. Once the scaffold is mature, merge into `main`.
 
-- The `scripts/` directory contains helper scripts for building and testing.
-- Architecture documentation lives in `docs/`.
-- Product specifications live in `docs/product-spec.md`.
+## Ecosystem Standards
+
+All ecosystem repos follow: https://github.com/sparshsam/ecosystem-standards

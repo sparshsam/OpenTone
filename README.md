@@ -1,133 +1,152 @@
 # OpenTone
 
-**OpenTone** — offline-first personal music library and desktop player for music you own.
+**Offline-first personal music library and desktop player for music you own.**
 
-OpenTone is bring-your-own-music software. It does not host, distribute, sell, scrape, stream, or provide copyrighted music. Users are responsible for sourcing their own music legally.
+**Maturity:** Alpha. Core playback and library management are scaffolded. Breaking changes expected.
 
-> **Your music. Your library. Your control.**
-
----
-
-## Concept
-
-OpenTone is a calm, modern, offline-first personal music library and desktop player. It is **not** a Spotify clone and does not provide music. Users bring their own legally obtained music files, import them locally, manage their library, and play music offline.
-
-### Phase 1 (Current)
-
-Desktop-only MVP with:
-- **Local music import** — Import a folder, recursively scan for `.mp3`, `.flac`, `.wav`, `.aac`, `.m4a`, `.ogg`
-- **Local playback** — Play/pause, next/previous, seek bar, queue
-- **Library management** — Track list, artist/album views, search/filter
-- **Zero data collection** — Everything stays on your machine
-
-### Future Phases
-
-See [ROADMAP.md](./ROADMAP.md) for the full product roadmap.
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![Tauri](https://img.shields.io/badge/Tauri_v2-FFC131?logo=tauri&logoColor=white)
+![React](https://img.shields.io/badge/React_19-61DAFB?logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript_strict-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)](CONTRIBUTING.md)
 
 ---
 
-## Stack
+## Quick Links
 
-| Layer | Technology |
-|-------|-----------|
-| Desktop shell | [Tauri v2](https://v2.tauri.app/) |
-| Frontend | React 19 + TypeScript |
-| Build tool | Vite 6 |
-| Styling | Tailwind CSS 4 |
-| Local DB | SQLite (via Tauri) |
-| Audio | Rust + web audio |
+- [Architecture](docs/architecture.md)
+- [Product Spec](docs/product-spec.md)
+- [Legal Positioning](docs/legal-positioning.md)
+- [Roadmap](ROADMAP.md)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
 
----
+## Overview
+
+OpenTone is a desktop music player for people who own their music files. It runs natively via Tauri — no electron overhead, no cloud dependency, no subscription. Point it at your local music folder and your library is ready.
+
+The app prioritizes:
+
+- **Offline-first.** Your music stays on your machine. No streaming, no sync, no vendor lock-in.
+- **Local ownership.** Play MP3, FLAC, and other formats from your own file system.
+- **Native performance.** Tauri delivers a lightweight, fast desktop experience.
+- **Privacy.** No accounts, no telemetry, no data collection.
+
+## Features
+
+| Feature | Status |
+|---------|--------|
+| Local music library import | Planned |
+| Playback (MP3, FLAC) | Planned |
+| Playlist management | Planned |
+| Search and filter | Planned |
+| Folder-based browsing | Planned |
+| Metadata editing | Planned |
+| Keyboard shortcuts | Planned |
+| Dark mode | Planned |
+| Mini-player mode | Future |
+
+## Screenshots
+
+> Screenshots will be added after the first functional release.
+
+```
+assets/screenshots/
+├── library.png      # Music library view
+├── player.png       # Now-playing interface
+└── settings.png     # Settings and preferences
+```
+
+## Tech Stack
+
+| Layer | Choice |
+|-------|--------|
+| Desktop framework | [Tauri v2](https://v2.tauri.app) (Rust backend) |
+| Frontend | [React 19](https://react.dev) |
+| Language | [TypeScript](https://www.typescriptlang.org) (strict mode) |
+| Build tool | [Vite 6](https://vitejs.dev) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com) |
+| Plugin | Tauri Dialog, Tauri FS |
 
 ## Getting Started
 
-### Prerequisites
-
-- [Rust](https://rustup.rs/) (install via `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- Node.js 20+
-- System dependencies for Tauri (Ubuntu/WSL):
-
 ```bash
-sudo apt-get install -y \
-  libwebkit2gtk-4.1-dev \
-  build-essential \
-  libxdo-dev \
-  libssl-dev \
-  libayatana-appindicator3-dev \
-  librsvg2-dev \
-  libsoup-3.0-dev \
-  libjavascriptcoregtk-4.1-dev
-```
+# Prerequisites: Node.js >= 18, Rust toolchain
 
-Or run the included script:
+# Navigate to the repo
+cd ~/repos/sparshsam/OpenTone
 
-```bash
-chmod +x scripts/install-deps.sh
-./scripts/install-deps.sh
-```
-
-### Development
-
-```bash
-# Install frontend dependencies
+# Install dependencies
 npm install
 
-# Start the dev server
+# Development server (browser)
 npm run dev
 
-# In another terminal, start the Tauri app
+# Full Tauri desktop build
 npm run tauri dev
+
+# Production build
+npm run build
+
+# Validation
+npm run lint
+npm run typecheck
 ```
-
-### Other Commands
-
-```bash
-npm run lint       # Lint all source files
-npm run typecheck  # TypeScript type checking
-npm run build      # Production frontend build
-npm run tauri build  # Production desktop build
-```
-
----
 
 ## Repository Structure
 
 ```
 OpenTone/
-├── src/                      # React frontend
-│   ├── components/           # UI components
-│   ├── types/                # TypeScript types
-│   ├── App.tsx               # Root application component
-│   ├── main.tsx              # Entry point
-│   └── index.css             # Global styles (Tailwind)
-├── src-tauri/                # Rust backend (Tauri)
-│   ├── src/
-│   │   ├── lib.rs            # Tauri commands and library
-│   │   └── main.rs           # Entry point
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── docs/                     # Documentation
-├── public/                   # Static assets
-├── scripts/                  # Utility scripts
-└── package.json
+├── .github/workflows/
+│   └── ci.yml              # Lint, typecheck, build
+├── assets/
+│   ├── screenshots/         # Product screenshots (TBD)
+│   └── diagrams/            # Architecture diagrams (TBD)
+├── docs/
+│   ├── architecture.md      # System architecture
+│   ├── legal-positioning.md # Legal and compliance context
+│   ├── product-spec.md      # Detailed product specification
+│   └── README.md            # Documentation index
+├── public/                  # Static assets
+├── scripts/                 # Build and utility scripts
+├── src/                     # React frontend source
+├── src-tauri/               # Tauri Rust backend
+├── AGENTS.md                # AI agent instructions
+├── CHANGELOG.md             # Keep a Changelog format
+├── CLAUDE.md                # Claude Code instructions
+├── CODE_OF_CONDUCT.md       # Professional conduct standards
+├── CONTRIBUTING.md          # Contributor guide
+├── LICENSE                  # MIT
+├── README.md                # This file
+├── ROADMAP.md               # Product roadmap
+├── SECURITY.md              # Security policy
+└── SUPPORT.md               # Support channels
 ```
 
+## Limitations
+
+- **Alpha software.** Playback and library features are not yet functional.
+- **Local files only.** No streaming service integration.
+- **No remote access.** Music cannot be streamed to other devices.
+- **No DRM.** Only plays unencrypted audio files the user owns.
+- **No mobile version.** Desktop-only (macOS, Windows, Linux).
+
+## Workflow
+
+1. Branch from `main`: `feat/description`, `fix/description`, `docs/description`
+2. Run validation before every PR: `npm run lint && npm run typecheck && npm run build`
+3. Open a pull request for every merge into `main`
+4. No direct pushes to `main`
+
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the full product roadmap.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ---
 
-## Design Principles
-
-- **Calm** — Minimal, warm, restrained interface. No flashing UI, no algorithmic feeds.
-- **Offline-first** — No account required. No data leaves your machine.
-- **Ownership-first** — You own your music files. OpenTone just helps you organize and play them.
-- **Transparent** — No recommendations, no social features, no tracking.
-- **Privacy-respecting** — Zero telemetry, zero data collection, zero cloud dependencies in Phase 1.
-
----
-
-## Legal
-
-OpenTone does not provide music. It does not host, distribute, sell, scrape, stream, or provide access to copyrighted music. Users are responsible for sourcing their own music legally.
-
-OpenTone is released under the [MIT License](./LICENSE).
-
-See [docs/legal-positioning.md](./docs/legal-positioning.md) for the full legal positioning document.
+*Last updated: June 2026*
