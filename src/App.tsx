@@ -448,7 +448,7 @@ export default function App() {
             activePlaylistId={selectedPlaylistId}
           />
         );
-      case "playlist-detail":
+      case "playlist-detail": {
         const activePlaylist = playlists.find((p) => p.id === selectedPlaylistId);
         if (!activePlaylist) {
           return (
@@ -474,6 +474,7 @@ export default function App() {
             onPlaylistChanged={loadPlaylists}
           />
         );
+      }
       default:
         return (
           <LibraryView

@@ -12,13 +12,13 @@ This file provides orientation for AI coding agents working on the OpenTone proj
 
 ## Development Workflow
 
-1. **Branch from `main`**: Create feature branches from `main`.
+1. **Branch from `main`**: Create feature branches from `main` using `feat/` prefix.
 2. **Pull Requests**: All changes go through PRs into `main`. Squash merge.
 3. **Quality gates**: Before committing, run:
    - `npm run typecheck` (TypeScript check)
    - `npm run build` (frontend build)
    - `cargo check` (Rust compilation check)
-4. **Conventional commits**: Use `feat:`, `fix:`, `docs:`, `chore:` prefixes.
+4. **Conventional commits**: Use `feat:`, `fix:`, `docs:`, `chore:` prefixes (imperative mood, ≤72 chars).
 5. **Versioning**: Follow semantic versioning (`vMAJOR.MINOR.PATCH`).
 6. **Releases**: Tagged releases (`v*`) trigger automated GitHub Actions builds.
 
@@ -33,14 +33,14 @@ This file provides orientation for AI coding agents working on the OpenTone proj
 
 - **No cloud dependencies**: OpenTone is offline-first. No accounts, no telemetry, no cloud sync.
 - **No streaming**: OpenTone does not provide music. Users bring their own files.
-- **Desktop-only**: OpenTone is a Tauri desktop app, not a web service. No Vercel/Netlify deployment.
+- **Desktop-only**: OpenTone is a Tauri desktop app, not a web service.
 - **Privacy**: Zero data collection. Everything stays on the user's machine.
 
 ## Documentation
 
-- `README.md` — Project overview and getting started
-- `CHANGELOG.md` — Version history
-- `ROADMAP.md` — Future plans
+- `README.md` — Project overview, status, and getting started
+- `CHANGELOG.md` — Version history (Keep a Changelog format)
+- `ROADMAP.md` — Planned development
 - `docs/architecture.md` — Technical architecture
 - `docs/release-builds.md` — Release artifact documentation
 - `docs/product-spec.md` — Product specifications
