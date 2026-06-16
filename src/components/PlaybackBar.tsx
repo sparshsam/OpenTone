@@ -12,6 +12,8 @@ interface PlaybackBarProps {
   artworkUri: string | null;
   queueLength: number;
   queueIndex: number;
+  playbackError?: string | null;
+  onDismissError?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -33,6 +35,8 @@ export default function PlaybackBar({
   artworkUri,
   queueLength,
   queueIndex,
+  playbackError,
+  onDismissError,
 }: PlaybackBarProps) {
   const hasTrack = currentTrack !== null;
   const canPrevious = hasTrack && queueLength > 0;
@@ -139,15 +143,30 @@ export default function PlaybackBar({
         </div>
       </div>
 
-      {/* Right side — queue position + favorite */}
+      {/* Right side — queue position + playback error + favorite */}
       <div className="flex w-72 items-center justify-end gap-3">
         {currentTrack && (
           <>
-            {queueLength > 1 && (
+            {playbackError ? (
+              <span className="flex items-center gap-1 text-xs text-danger">
+                <span>⚠</span>
+                <span className="max-w-32 truncate" title={playbackError}>
+                  {playbackError}
+                </span>
+                {onDismissError && (
+                  <button
+                    onClick={onDismissError}
+                    className="ml-0.5 leading-none hover:opacity-70"
+                  >
+                    ×
+                  </button>
+                )}
+              </span>
+            ) : queueLength > 1 ? (
               <span className="text-xs text-muted/50 tabular-nums">
                 {queueIndex + 1} / {queueLength}
               </span>
-            )}
+            ) : null}
             <span
               className={`text-sm transition-colors ${
                 currentTrack.is_favorite ? "text-accent" : "text-muted/30"

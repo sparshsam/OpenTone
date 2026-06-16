@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   type Track,
@@ -36,6 +36,7 @@ export default function App() {
   const [queueIndex, setQueueIndex] = useState<number>(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Playlist state
@@ -92,13 +93,24 @@ export default function App() {
         return prev;
       });
     };
+    const onError = () => {
+      const code = audio.error?.code;
+      const msg = audio.error?.message ?? "Unknown audio error";
+      setPlaybackError(
+        code === 4
+          ? "Audio format not supported. Try MP3 or FLAC."
+          : `Playback error: ${msg}`,
+      );
+    };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
     };
@@ -110,10 +122,13 @@ export default function App() {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    audio.src = currentTrack.path;
+    setPlaybackError(null);
+    audio.src = convertFileSrc(currentTrack.path);
+
     if (isPlaying) {
-      audio.play().catch(() => {
-        console.warn("Playback unavailable — audio backend may not be connected");
+      audio.play().catch((err) => {
+        console.warn("Playback failed:", err);
+        setPlaybackError("Could not play this file. It may be missing, moved, or in an unsupported format.");
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -528,6 +543,8 @@ export default function App() {
         artworkUri={currentArtworkUri}
         queueLength={queue.length}
         queueIndex={queueIndex}
+        playbackError={playbackError}
+        onDismissError={() => setPlaybackError(null)}
       />
 
       {/* Add to playlist modal */}

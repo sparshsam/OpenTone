@@ -25,7 +25,10 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost data:; media-src 'self' http://asset.localhost asset:; style-src 'self' 'unsafe-inline'",
+      "assetProtocol": {
+        "scope": ["$HOME/**"]
+      }
     }
   },
   "bundle": {
