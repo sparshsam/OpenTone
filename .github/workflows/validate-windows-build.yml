@@ -1,0 +1,66 @@
+# OpenTone Windows Build Validation
+# Temporary: validates the asset-protocol playback fix on Windows
+# before merging PR #6. Produces .exe + .msi artifacts for manual testing.
+# Delete this file after validation passes.
+
+name: Validate Windows Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build"
+        required: true
+        default: "feat/windows-playback-asset-protocol"
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: validate-windows-${{ inputs.branch }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install frontend dependencies
+        run: npm ci --include=optional
+
+      - name: Type check and build frontend
+        run: npm run typecheck && npm run build
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build Tauri app
+        run: npm run tauri build -- --target x86_64-pc-windows-msvc
+
+      - name: Upload portable executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenTone-x64.exe
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/OpenTone.exe
+          if-no-files-found: error
+
+      - name: Upload MSI installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: OpenTone-x64.msi
+          path: src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+          if-no-files-found: warn
