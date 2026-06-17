@@ -56,6 +56,10 @@ See [docs/release-builds.md](./docs/release-builds.md) for details.
 
 `mp3`, `flac`, `wav`, `aac`, `m4a`, `ogg`, `opus`, `wv` (WavPack), `aiff`
 
+## Ecosystem Role
+
+OpenTone is the **music library and desktop player** within the broader ecosystem of personal, offline-first tools. It is designed to complement other local-first applications by providing a calm, private way to organize and enjoy personally owned audio files. OpenTone does not connect to any cloud service, collect telemetry, or require accounts — it is a self-contained desktop application that respects the user's ownership of their media.
+
 ## Architecture
 
 OpenTone is a Tauri v2 desktop application with a React + TypeScript frontend and a Rust backend.
