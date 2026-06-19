@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import {
   type Track,
   type AlbumInfo,
@@ -36,7 +37,9 @@ export default function App() {
   const [queueIndex, setQueueIndex] = useState<number>(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentBlobUrlRef = useRef<string | null>(null);
 
   // Playlist state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -75,7 +78,7 @@ export default function App() {
     loadLibrary();
   }, []);
 
-  // Set up audio element
+  // Set up audio element with comprehensive event diagnostics
   useEffect(() => {
     const audio = new Audio();
     audioRef.current = audio;
@@ -92,15 +95,72 @@ export default function App() {
         return prev;
       });
     };
+    const onError = () => {
+      const code = audio.error?.code;
+      const msg = audio.error?.message ?? "Unknown audio error";
+      const details = {
+        errorCode: code,
+        errorMessage: msg,
+        src: audio.src,
+        networkState: audio.networkState,
+        readyState: audio.readyState,
+        // MEDIA_ERR_ABORTED=1, MEDIA_ERR_NETWORK=2, MEDIA_ERR_DECODE=3, MEDIA_ERR_SRC_NOT_SUPPORTED=4
+        codeLabel: code === 1 ? "MEDIA_ERR_ABORTED" :
+                   code === 2 ? "MEDIA_ERR_NETWORK" :
+                   code === 3 ? "MEDIA_ERR_DECODE" :
+                   code === 4 ? "MEDIA_ERR_SRC_NOT_SUPPORTED" : "UNKNOWN",
+      };
+      console.error("[Playback Debug] Audio error event:", JSON.stringify(details, null, 2));
+      setPlaybackError(
+        code === 4
+          ? "Audio format not supported."
+          : `Playback error (code ${code}): ${msg}`,
+      );
+    };
+
+    // Register ALL media events for diagnostic logging
+    const mediaEvents = [
+      "loadstart", "progress", "suspend", "abort", "error",
+      "loadedmetadata", "loadeddata",
+      "canplay", "canplaythrough",
+      "play", "playing", "pause", "waiting", "seeking", "seeked",
+      "stalled", "emptied",
+    ];
+    const mediaEventHandlers = mediaEvents.map((evt) => {
+      const handler = () => {
+        console.log(`[Playback Debug] Event: ${evt}`, JSON.stringify({
+          src: audio.src?.slice(0, 120),
+          networkState: audio.networkState,
+          readyState: audio.readyState,
+          currentTime: audio.currentTime,
+          duration: audio.duration,
+          volume: audio.volume,
+          muted: audio.muted,
+          paused: audio.paused,
+          ended: audio.ended,
+        }));
+      };
+      audio.addEventListener(evt, handler);
+      return [evt, handler] as const;
+    });
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
+      for (const [evt, handler] of mediaEventHandlers) {
+        audio.removeEventListener(evt, handler);
+      }
       audio.pause();
       audio.src = "";
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+        currentBlobUrlRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,11 +170,71 @@ export default function App() {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    audio.src = currentTrack.path;
+    setPlaybackError(null);
+    const fileFormat = currentTrack.format?.toLowerCase() || "mp3";
+    const convertedUrl = convertFileSrc(currentTrack.path);
+
+    // Log full diagnostic info
+    const mimeMap: Record<string, string> = {
+      mp3: "audio/mpeg",
+      m4a: "audio/mp4",
+      aac: "audio/aac",
+      wav: "audio/wav",
+      flac: "audio/flac",
+      ogg: "audio/ogg",
+      opus: "audio/ogg",
+      wv: "audio/wavpack",
+      aiff: "audio/aiff",
+    };
+    const mimeType = mimeMap[fileFormat] || `audio/${fileFormat}`;
+    console.log("[Playback Debug] ====================================");
+    console.log("[Playback Debug] Loading track:", JSON.stringify({
+      title: currentTrack.title,
+      format: fileFormat,
+      path: currentTrack.path,
+      convertedUrl: convertedUrl,
+      mimeType: mimeType,
+      canPlayType: audio.canPlayType(mimeType),
+      hasArtwork: currentTrack.has_artwork,
+      duration: currentTrack.duration,
+    }, null, 2));
+
+    // Clean up any previous blob URL
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = null;
+    }
+
+    async function attemptPlayback() {
+      const el = audio!;
+      // Strategy 1: Asset protocol (convertFileSrc)
+      el.src = convertedUrl;
+      try {
+        await el.play();
+        console.log("[Playback Debug] ✅ Asset protocol playback started");
+        return;
+      } catch (err) {
+        console.warn("[Playback Debug] ❌ Asset protocol failed:", String(err));
+      }
+
+      // Strategy 2: Fallback — read file via IPC, create blob URL
+      try {
+        console.log("[Playback Debug] Trying fallback: readFile + blob URL");
+        const fileData = await readFile(currentTrack!.path);
+        const blob = new Blob([fileData], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        currentBlobUrlRef.current = blobUrl;
+        el.src = blobUrl;
+        await el.play();
+        console.log("[Playback Debug] ✅ Fallback (blob URL) playback started");
+      } catch (fsErr) {
+        console.error("[Playback Debug] ❌ Both playback strategies failed:", String(fsErr));
+        setPlaybackError(`Could not play this file. (${String(fsErr).slice(0, 80)})`);
+      }
+    }
+
     if (isPlaying) {
-      audio.play().catch(() => {
-        console.warn("Playback unavailable — audio backend may not be connected");
-      });
+      attemptPlayback();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueIndex, currentTrack?.id]);
@@ -125,7 +245,9 @@ export default function App() {
     if (!audio || !currentTrack) return;
 
     if (isPlaying) {
-      audio.play().catch(() => {});
+      audio.play().catch((err) => {
+        console.warn("[Playback Debug] play() failed on isPlaying toggle:", String(err));
+      });
     } else {
       audio.pause();
     }
@@ -528,6 +650,8 @@ export default function App() {
         artworkUri={currentArtworkUri}
         queueLength={queue.length}
         queueIndex={queueIndex}
+        playbackError={playbackError}
+        onDismissError={() => setPlaybackError(null)}
       />
 
       {/* Add to playlist modal */}
