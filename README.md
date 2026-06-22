@@ -169,6 +169,120 @@ OpenTone/
 - OpenTone does **not** include AI recommendations, social features, or streaming service integrations.
 - Metadata editing, playlist reordering, and auto-import are planned but not yet available (see [ROADMAP.md](./ROADMAP.md)).
 
+
+## Store Readiness
+
+OpenTone v0.3.1 includes a baseline store-readiness pass to prepare for potential distribution via app stores (Microsoft Store, Mac App Store, Linux package managers). The full checklist is in [docs/store-readiness-checklist.md](./docs/store-readiness-checklist.md).
+
+Key results:
+
+- **Privacy policy**: ✅ Complete (`PRIVACY.md`)
+- **Terms of service**: ✅ Complete (`TERMS.md`)
+- **Support document**: ✅ Complete (`SUPPORT.md`)
+- **App icons**: ✅ Generated from canonical 1024×1024 source
+- **Permissions**: ✅ Minimal and documented
+- **Crash reporting**: ❌ Intentionally disabled (zero-telemetry policy)
+- **Analytics**: ❌ Intentionally disabled (zero-telemetry policy)
+- **Auto-update**: 🔲 Planned (manual via GitHub Releases for now)
+- **Code signing**: 🔲 Planned (not yet configured)
+- **macOS .icns**: 🔲 Planned (requires macOS tooling)
+- **Screenshots**: 🔧 Manual capture needed after stable build
+
+## Privacy
+
+OpenTone respects your privacy by design. See the full [Privacy Policy](./PRIVACY.md) for details.
+
+- **No data collection**: OpenTone does not collect any telemetry, analytics, crash reports, or personal information.
+- **No accounts**: No account creation, login, or registration required.
+- **No cloud**: All data stays on your local machine. No cloud sync, no external servers.
+- **No third-party SDKs**: No advertising, tracking, or analytics SDKs are bundled or used.
+- **No network access**: The application does not connect to any external service.
+
+## Data Stored Locally
+
+OpenTone stores the following data on your local machine:
+
+| Data | Location | Purpose |
+|------|----------|---------|
+| Music library database | App data directory (`library.db`) | Track metadata, playlists, favorites, settings |
+| Album artwork cache | App data directory (`artwork/`) | Cached album cover images |
+| Application settings | SQLite `settings` table | User preferences |
+
+**App data directories by platform:**
+
+| Platform | Path |
+|----------|------|
+| Windows | `%APPDATA%\com.opentone.app\` |
+| macOS | `~/Library/Application Support/com.opentone.app/` |
+| Linux | `~/.local/share/com.opentone.app/` |
+
+## Data Deletion
+
+Since all data is local, deletion is straightforward:
+
+1. **Uninstall** OpenTone via your operating system's standard uninstall process.
+2. **Delete the app data directory** to remove all library data, playlists, artwork cache, and settings (see paths above).
+3. **Your music files are never modified or deleted** by OpenTone — only the library index is removed.
+
+A future release may add an in-app "Clear library and data" option.
+
+## Permissions
+
+OpenTone requests only the permissions it genuinely needs:
+
+| Permission | Purpose |
+|------------|---------|
+| `dialog:allow-open` | File/folder picker for importing music |
+| `fs:allow-read` | Read audio files and album artwork |
+| `fs:allow-exists` | Check if files still exist on disk |
+| `fs:allow-stat` | Get file metadata (size, modified date) |
+| `fs:scope` (`$HOME/**`) | Access user's home directory for music files |
+
+No permissions for networking, camera, microphone, location, or any hardware are requested.
+
+## Accessibility
+
+OpenTone has been reviewed for basic accessibility:
+
+- **Keyboard navigation**: Full keyboard shortcut support — Space (play/pause), J/K (prev/next), / (focus search), Esc (clear). All UI elements are tab-navigable.
+- **Button labels**: All interactive elements have visible labels or `title` attributes.
+- **Focus indicators**: Focus-visible states are styled (`focus:border-accent` on inputs).
+- **Color contrast**: Dark theme uses high-contrast color palette. Text and background combinations pass WCAG AA.
+- **Reduced motion**: No decorative animations. Only essential loading spinners are animated.
+- **Screen reader**: Semantic HTML structure with proper headings, lists, and table markup.
+
+A full ARIA audit is planned for a future release.
+
+## Versioning & Updates
+
+OpenTone follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`).
+
+- **Current version**: 0.3.1
+- **Release tags**: Git tags follow the `v*` pattern (e.g., `v0.3.1`).
+- **Update mechanism**: There is no auto-update currently configured. Users download new versions from [GitHub Releases](https://github.com/sparshsam/OpenTone/releases). A signed auto-updater is planned for a future store-ready release.
+
+## Support
+
+- **GitHub Issues**: [Bug reports and feature requests](https://github.com/sparshsam/OpenTone/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sparshsam/OpenTone/discussions)
+- **Email**: opensphere@sparshsam.com
+
+See [SUPPORT.md](./SUPPORT.md) for detailed guidance.
+
+## Age Rating Notes
+
+OpenTone is suitable for all ages:
+
+- No violent, sexual, or mature content
+- No gambling or simulated gambling
+- No in-app purchases
+- No advertisements
+- No social features or user-generated content sharing
+- No location tracking
+- Plays user-provided local audio files only
+
+See [docs/age-rating-notes.md](./docs/age-rating-notes.md) for the full age-rating questionnaire.
+
 ## License
 
 OpenTone is released under the [MIT License](./LICENSE).

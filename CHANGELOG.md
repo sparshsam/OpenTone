@@ -2,6 +2,27 @@
 
 All notable changes to OpenTone will be documented in this file.
 
+## [v0.3.1] — 2025-06-22
+
+### Added
+- **Store readiness documentation** — New `PRIVACY.md`, `TERMS.md`, `SUPPORT.md` for app-store compliance
+- **Store readiness checklist** — `docs/store-readiness-checklist.md` with full audit of all 15 store-readiness categories
+- **Age rating notes** — `docs/age-rating-notes.md` with prepared store questionnaire answers
+- **Privacy section** — README now documents data stored locally, data deletion workflow, and permissions
+- **Accessibility section** — README documents accessibility review results
+- **Versioning & Updates section** — README documents versioning strategy and manual update process
+- **Support section** — README links to support channels
+- **Icons** — Regenerated all app icons from canonical 1024×1024 source PNG
+
+### Changed
+- Version bumped to 0.3.1 across all configuration files
+- README expanded with comprehensive store-readiness, privacy, accessibility, and support documentation
+
+### Security
+- Zero-data-collection policy explicitly documented
+- Permission rationale documented with minimal permission set verified
+
+
 ## [v0.3.0-alpha] — 2025-06-07
 
 ### Added

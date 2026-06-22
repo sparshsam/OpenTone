@@ -84,34 +84,37 @@ export default function PlaybackBar({
       {/* Playback controls */}
       <div className="flex flex-1 flex-col items-center gap-1">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onPrevious}
-            disabled={!canPrevious}
-            className={`transition-colors ${
-              canPrevious ? "text-muted hover:text-text" : "text-muted/20 cursor-not-allowed"
-            }`}
+         <button
+           onClick={onPrevious}
+           disabled={!canPrevious}
+           aria-label="Previous track"
+           className={`transition-colors ${
+             canPrevious ? "text-muted hover:text-text" : "text-muted/20 cursor-not-allowed"
+           }`}
             title="Previous"
           >
             ⏮
           </button>
-          <button
-            onClick={onPlayPause}
-            disabled={!hasTrack}
-            className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
-              hasTrack
-                ? "bg-text text-surface hover:bg-subtle"
-                : "bg-surface-hover text-muted/30 cursor-not-allowed"
-            }`}
+         <button
+           onClick={onPlayPause}
+           disabled={!hasTrack}
+           aria-label={hasTrack ? (isPlaying ? "Pause" : "Play") : "No track"}
+           className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
+             hasTrack
+               ? "bg-text text-surface hover:bg-subtle"
+               : "bg-surface-hover text-muted/30 cursor-not-allowed"
+           }`}
             title={hasTrack ? (isPlaying ? "Pause" : "Play") : "No track"}
           >
             {isPlaying ? "⏸" : "▶"}
           </button>
-          <button
-            onClick={onNext}
-            disabled={!canNext}
-            className={`transition-colors ${
-              canNext ? "text-muted hover:text-text" : "text-muted/20 cursor-not-allowed"
-            }`}
+         <button
+           onClick={onNext}
+           disabled={!canNext}
+           aria-label="Next track"
+           className={`transition-colors ${
+             canNext ? "text-muted hover:text-text" : "text-muted/20 cursor-not-allowed"
+           }`}
             title="Next"
           >
             ⏭
@@ -122,12 +125,18 @@ export default function PlaybackBar({
           <span className="w-10 text-right text-xs tabular-nums text-muted">
             {formatTime(currentTime)}
           </span>
-          <div
-            className={`relative h-1 flex-1 rounded-full ${
-              hasTrack ? "cursor-pointer bg-surface-hover" : "bg-surface-hover"
-            }`}
-            onClick={handleSeek}
-          >
+         <div
+           className={`relative h-1 flex-1 rounded-full ${
+             hasTrack ? "cursor-pointer bg-surface-hover" : "bg-surface-hover"
+           }`}
+           role="slider"
+           aria-label="Seek"
+           aria-valuemin={0}
+           aria-valuemax={duration}
+           aria-valuenow={currentTime}
+           tabIndex={hasTrack ? 0 : -1}
+           onClick={handleSeek}
+         >
             <div
               className="absolute left-0 top-0 h-full rounded-full bg-accent transition-[width] duration-150"
               style={{ width: `${progress}%` }}

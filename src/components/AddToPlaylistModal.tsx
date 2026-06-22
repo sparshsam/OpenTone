@@ -45,11 +45,14 @@ export default function AddToPlaylistModal({
     }
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-      onClick={onClose}
-    >
+   return (
+     <div
+       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+       role="dialog"
+       aria-modal="true"
+       aria-label="Add to playlist"
+       onClick={onClose}
+     >
       <div
         className="w-80 rounded-xl border border-border bg-surface shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -69,12 +72,13 @@ export default function AddToPlaylistModal({
             </p>
           ) : (
             playlists.map((pl) => (
-              <button
-                key={pl.id}
-                onClick={() => handleAdd(pl.id)}
-                disabled={adding === pl.id}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface-raised disabled:opacity-50"
-              >
+               <button
+                 key={pl.id}
+                 onClick={() => handleAdd(pl.id)}
+                 disabled={adding === pl.id}
+                 aria-label={`Add to ${pl.name}`}
+                 className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-text transition-colors hover:bg-surface-raised disabled:opacity-50"
+               >
                 <span className="text-muted">♪</span>
                 <span className="flex-1 truncate">{pl.name}</span>
                 <span className="text-xs text-muted">{pl.track_count}</span>
@@ -84,12 +88,13 @@ export default function AddToPlaylistModal({
         </div>
 
         <div className="border-t border-border px-4 py-2 text-right">
-          <button
-            onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-xs text-muted hover:text-text"
-          >
-            Cancel
-          </button>
+         <button
+           onClick={onClose}
+           aria-label="Cancel"
+           className="rounded-lg px-3 py-1.5 text-xs text-muted hover:text-text"
+         >
+           Cancel
+         </button>
         </div>
       </div>
     </div>

@@ -117,7 +117,7 @@ export default function SettingsView({
               personal music library and desktop player for music you own.
             </p>
             <p className="mt-2">
-              <strong className="text-text">Version:</strong> 0.3.0
+              <strong className="text-text">Version:</strong> 0.3.1
             </p>
             <p className="mt-2 italic text-muted/60">
               OpenTone does not provide music. It helps you organize and play

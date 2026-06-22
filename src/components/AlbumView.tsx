@@ -27,14 +27,17 @@ function AlbumCard({
   const durationStr = formatDuration(album.duration);
 
   return (
-    <div
-      className={`group cursor-pointer rounded-lg border p-3 transition-colors hover:bg-surface-raised ${
-        isCurrentAlbum
-          ? "border-accent bg-surface-raised"
-          : "border-border bg-surface"
-      }`}
-      onClick={() => onPlay(tracks, 0)}
-    >
+     <div
+       className={`group cursor-pointer rounded-lg border p-3 transition-colors hover:bg-surface-raised ${
+         isCurrentAlbum
+           ? "border-accent bg-surface-raised"
+           : "border-border bg-surface"
+       }`}
+       role="button"
+       tabIndex={0}
+       aria-label={`Play album ${album.title} by ${album.artist}`}
+       onClick={() => onPlay(tracks, 0)}
+     >
       {/* Artwork */}
       <div className="mb-2 flex aspect-square w-full items-center justify-center overflow-hidden rounded-md bg-surface-hover">
         {artworkUri ? (

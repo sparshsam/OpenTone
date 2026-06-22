@@ -18,10 +18,10 @@ OpenTone is distributed as native desktop installers via **GitHub Releases**.
 
 | Platform | File | Notes |
 |----------|------|-------|
-| **Windows** | `OpenTone_<version>_x64-setup.exe` or `.msi` | Windows 10+ (64-bit) |
-| **Linux** | `OpenTone_<version>_amd64.AppImage` or `.deb` | AppImage works on most distros; .deb for Debian/Ubuntu |
-| **macOS (Intel)** | `OpenTone_<version>_x64.dmg` | macOS 12+ (Monterey or later) |
-| **macOS (Apple Silicon)** | `OpenTone_<version>_aarch64.dmg` | M1/M2/M3/M4 Macs |
+| **Windows** | `OpenTone_0.3.1_x64-setup.exe` or `.msi` | Windows 10+ (64-bit) |
+| **Linux** | `OpenTone_0.3.1_amd64.AppImage` or `.deb` | AppImage works on most distros; .deb for Debian/Ubuntu |
+| **macOS (Intel)** | `OpenTone_0.3.1_x64.dmg` | macOS 12+ (Monterey or later) |
+| **macOS (Apple Silicon)** | `OpenTone_0.3.1_aarch64.dmg` | M1/M2/M3/M4 Macs |
 
 Each release also includes:
 - `.tar.gz` / `.zip` archives for manual extraction

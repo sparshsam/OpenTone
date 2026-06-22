@@ -146,6 +146,7 @@ function TrackRow({
                 : "text-muted/30 hover:text-muted"
             }`}
             title={track.is_favorite ? "Remove from favorites" : "Add to favorites"}
+            aria-label={track.is_favorite ? `Remove ${track.title} from favorites` : `Add ${track.title} to favorites`}
           >
             {track.is_favorite ? "★" : "☆"}
           </button>
@@ -158,6 +159,7 @@ function TrackRow({
               e.stopPropagation();
               onAddToPlaylist(track);
             }}
+            aria-label={`Add ${track.title} to playlist`}
             className="text-xs text-muted transition-colors hover:text-accent"
             title="Add to playlist"
           >
@@ -172,6 +174,7 @@ function TrackRow({
               e.stopPropagation();
               onRemoveFromPlaylist(track.id);
             }}
+            aria-label={`Remove ${track.title} from playlist`}
             className="text-xs text-muted transition-colors hover:text-red-400"
             title="Remove from playlist"
           >
@@ -305,6 +308,8 @@ export default function TrackList({
                 className={`${col.className} font-medium ${
                   col.sortable ? "cursor-pointer select-none hover:text-subtle" : ""
                 }`}
+                aria-sort={col.sortable && sortField === col.key ? (sortDirection === "asc" ? "ascending" : "descending") : undefined}
+                aria-label={col.sortable ? `Sort by ${col.label}` : undefined}
                 onClick={() => col.sortable && handleSort(col.key as SortField)}
               >
                 <span className="inline-flex items-center gap-1">
