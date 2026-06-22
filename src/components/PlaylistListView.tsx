@@ -165,18 +165,20 @@ export default function PlaylistListView({
                 {/* Actions */}
                 {renamingId !== pl.id && (
                   <div className="flex flex-shrink-0 gap-1">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); startRename(pl); }}
-                      className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-text"
-                      title="Rename"
-                    >
+                   <button
+                     onClick={(e) => { e.stopPropagation(); startRename(pl); }}
+                     aria-label={`Rename playlist ${pl.name}`}
+                     className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-text"
+                     title="Rename"
+                   >
                       ✎
                     </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(pl.id, pl.name); }}
-                      className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-red-400"
-                      title="Delete"
-                    >
+                   <button
+                     onClick={(e) => { e.stopPropagation(); handleDelete(pl.id, pl.name); }}
+                     aria-label={`Delete playlist ${pl.name}`}
+                     className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-red-400"
+                     title="Delete"
+                   >
                       ✕
                     </button>
                   </div>

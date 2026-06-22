@@ -42,10 +42,11 @@ export default function TrackListHeader({
             className="w-48 rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-xs text-text placeholder-muted/50 outline-none transition-colors focus:border-accent"
           />
           {searchQuery && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted/50 hover:text-text"
-            >
+       <button
+         onClick={() => onSearchChange("")}
+         aria-label="Clear search"
+         className="absolute right-2 top-1/2 -translate-y-1/2 text-muted/50 hover:text-text"
+       >
               ✕
             </button>
           )}

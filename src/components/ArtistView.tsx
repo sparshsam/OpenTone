@@ -106,10 +106,12 @@ function ArtistRow({
 
   return (
     <div className="px-6">
-      <button
-        onClick={() => setExpanded((p) => !p)}
-        className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-surface-raised/50"
-      >
+     <button
+       onClick={() => setExpanded((p) => !p)}
+       aria-expanded={expanded}
+       aria-label={`${artist.name}: ${expanded ? "collapse" : "expand"}`}
+       className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-surface-raised/50"
+     >
         {/* Artist initial */}
         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface-hover text-sm font-medium text-muted">
           {artist.name.charAt(0).toUpperCase()}
@@ -147,14 +149,15 @@ function ArtistRow({
                   {albumTracks
                     .sort((a, b) => a.track_number - b.track_number)
                     .map((track) => (
-                      <button
-                        key={track.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPlayTrack(track);
-                        }}
-                        className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-muted transition-colors hover:bg-surface-hover hover:text-text"
-                      >
+                     <button
+                       key={track.id}
+                       onClick={(e) => {
+                         e.stopPropagation();
+                         onPlayTrack(track);
+                       }}
+                       aria-label={`Play ${track.title}`}
+                       className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-sm text-muted transition-colors hover:bg-surface-hover hover:text-text"
+                     >
                         <span className="w-6 text-right text-[11px] text-muted/50 tabular-nums">
                           {track.track_number}
                         </span>

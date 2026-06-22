@@ -35,3 +35,5 @@ OpenTone is an open-source, offline-first desktop music player. Community-based 
 ## Commercial Support
 
 Commercial support is not currently available. OpenTone is a personal project maintained by its creator.
+
+**Email:** opensphere@sparshsam.com

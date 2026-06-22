@@ -35,3 +35,10 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #57534e;
 }
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin {
+    animation: none;
+  }
+}
