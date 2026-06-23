@@ -109,31 +109,43 @@ export default function AlbumView({
     return map;
   }, [tracks]);
 
-  // Load artwork for albums on mount
+  // Load artwork for albums on mount — parallel with batched state update
   useEffect(() => {
+    if (albums.length === 0) return;
+
     async function loadArtwork() {
-      for (const album of albums) {
-        if (!album.has_artwork || artworkCache[album.id]) continue;
-        const albumTracks = tracksByAlbum.get(album.title);
-        if (!albumTracks || albumTracks.length === 0) continue;
-        const firstTrack = albumTracks[0]!;
-        try {
-          const dataUri = await invoke<string | null>("get_album_artwork", {
-            trackId: firstTrack.id,
-          });
-          if (dataUri) {
-            setArtworkCache((prev) => ({ ...prev, [album.id]: dataUri }));
+      const uncached = albums.filter(
+        (a) => a.has_artwork && !artworkCache[a.id]
+      );
+      if (uncached.length === 0) return;
+
+      // Fire all artwork requests in parallel, then batch-update state once
+      const results = await Promise.all(
+        uncached.map(async (album) => {
+          const albumTracks = tracksByAlbum.get(album.title);
+          const firstTrack = albumTracks?.[0];
+          if (!firstTrack) return null;
+          try {
+            const dataUri = await invoke<string | null>("get_album_artwork", {
+              trackId: firstTrack.id,
+            });
+            return dataUri ? { id: album.id, uri: dataUri } : null;
+          } catch {
+            return null;
           }
-        } catch {
-          // Silently fail
-        }
+        })
+      );
+
+      const batch: Record<string, string> = {};
+      for (const r of results) {
+        if (r) batch[r.id] = r.uri;
+      }
+      if (Object.keys(batch).length > 0) {
+        setArtworkCache((prev) => ({ ...prev, ...batch }));
       }
     }
-    if (albums.length > 0) {
-      loadArtwork();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [albums.length]);
+    loadArtwork();
+  }, [albums, artworkCache]);
 
   // Find current album from current track
   const currentAlbum = useMemo(() => {

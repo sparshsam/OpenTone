@@ -214,18 +214,31 @@ export default function TrackList({
     [sortField],
   );
 
-  const loadArtwork = useCallback(
-    async (track: Track) => {
-      if (!track.has_artwork || artworkCache[track.id]) return;
-      try {
-        const dataUri = await invoke<string | null>("get_album_artwork", {
-          trackId: track.id,
-        });
-        if (dataUri) {
-          setArtworkCache((prev) => ({ ...prev, [track.id]: dataUri }));
-        }
-      } catch {
-        // Silently fail for artwork loading
+  // Load artwork in parallel with a single batched state update
+  const loadVisibleArtwork = useCallback(
+    async (tracks: Track[]) => {
+      const needed = tracks.filter(
+        (t) => t.has_artwork && !artworkCache[t.id]
+      );
+      if (needed.length === 0) return;
+      const results = await Promise.all(
+        needed.map(async (track) => {
+          try {
+            const dataUri = await invoke<string | null>("get_album_artwork", {
+              trackId: track.id,
+            });
+            return dataUri ? { id: track.id, uri: dataUri } : null;
+          } catch {
+            return null;
+          }
+        })
+      );
+      const batch: Record<string, string> = {};
+      for (const r of results) {
+        if (r) batch[r.id] = r.uri;
+      }
+      if (Object.keys(batch).length > 0) {
+        setArtworkCache((prev) => ({ ...prev, ...batch }));
       }
     },
     [artworkCache],
@@ -277,13 +290,8 @@ export default function TrackList({
     return sortedList;
   }, [filtered, sortField, sortDirection]);
 
-  // Trigger artwork loading for visible tracks
-  const visibleTracks = sorted.slice(0, 100);
-  for (const track of visibleTracks) {
-    if (track.has_artwork && !artworkCache[track.id]) {
-      loadArtwork(track);
-    }
-  }
+  // Trigger artwork loading for visible tracks in parallel
+  loadVisibleArtwork(sorted.slice(0, 100));
 
   if (sorted.length === 0) {
     return (
