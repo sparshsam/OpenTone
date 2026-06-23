@@ -64,8 +64,7 @@ export default function PlaylistListView({
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-border px-6 py-3">
         <h1 className="text-base font-semibold text-text">Playlists</h1>
-        <button
-          onClick={() => setIsCreating(true)}
+        <button type="button" onClick={() => setIsCreating(true)}
           className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-hover"
         >
           + New
@@ -85,15 +84,13 @@ export default function PlaylistListView({
               autoFocus
               className="flex-1 rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-sm text-text placeholder-muted/50 outline-none focus:border-accent"
             />
-            <button
-              onClick={handleCreate}
+            <button type="button" onClick={handleCreate}
               disabled={!newName.trim()}
               className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
             >
               Create
             </button>
-            <button
-              onClick={() => { setIsCreating(false); setNewName(""); }}
+            <button type="button" onClick={() => { setIsCreating(false); setNewName(""); }}
               className="rounded-lg bg-surface-hover px-3 py-1.5 text-xs text-muted"
             >
               Cancel
@@ -142,8 +139,7 @@ export default function PlaylistListView({
                           className="flex-1 rounded border border-border bg-surface-raised px-2 py-0.5 text-sm text-text outline-none focus:border-accent"
                           onClick={(e) => e.stopPropagation()}
                         />
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleRename(pl.id); }}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleRename(pl.id); }}
                           className="text-xs text-accent"
                         >
                           Save
@@ -165,16 +161,14 @@ export default function PlaylistListView({
                 {/* Actions */}
                 {renamingId !== pl.id && (
                   <div className="flex flex-shrink-0 gap-1">
-                   <button
-                     onClick={(e) => { e.stopPropagation(); startRename(pl); }}
+                   <button type="button" onClick={(e) => { e.stopPropagation(); startRename(pl); }}
                      aria-label={`Rename playlist ${pl.name}`}
                      className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-text"
                      title="Rename"
                    >
                       ✎
                     </button>
-                   <button
-                     onClick={(e) => { e.stopPropagation(); handleDelete(pl.id, pl.name); }}
+                   <button type="button" onClick={(e) => { e.stopPropagation(); handleDelete(pl.id, pl.name); }}
                      aria-label={`Delete playlist ${pl.name}`}
                      className="rounded px-2 py-1 text-xs text-muted transition-colors hover:text-red-400"
                      title="Delete"

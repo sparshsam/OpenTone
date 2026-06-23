@@ -76,8 +76,7 @@ export default function LibraryView({
         isScanning={isScanning}
         hasLibraryPath={hasLibraryPath}
       >
-        <button
-          onClick={() => setShowFavoritesOnly((p) => !p)}
+        <button type="button" onClick={() => setShowFavoritesOnly((p) => !p)}
           className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
             showFavoritesOnly
               ? "bg-accent text-white"
@@ -118,8 +117,7 @@ export default function LibraryView({
               </p>
             </div>
             {!showFavoritesOnly && (
-              <button
-                onClick={onImport}
+              <button type="button" onClick={onImport}
                 disabled={isScanning}
                 className="rounded-lg bg-accent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
               >

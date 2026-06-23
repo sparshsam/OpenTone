@@ -54,7 +54,19 @@ See [docs/release-builds.md](./docs/release-builds.md) for details.
 
 ### Supported Audio Formats
 
-`mp3`, `flac`, `wav`, `aac`, `m4a`, `ogg`, `opus`, `wv` (WavPack), `aiff`
+OpenTone scans and indexes all common audio formats. Actual playback support depends on the web audio API of the host operating system and browser engine (WebKit on macOS/iOS, Chromium on Linux/Windows).
+
+| Format | Scanned & Indexed | Playback Support |
+|--------|:-:|:-:|
+| MP3    | ✅ | ✅ Supported (all platforms) |
+| WAV    | ✅ | ✅ Supported (all platforms) |
+| FLAC   | ✅ | ✅ Supported (Chrome, Firefox, Safari 14+) |
+| AAC    | ✅ | ✅ Supported (Chrome, Safari) |
+| M4A    | ✅ | ✅ Supported (Chrome, Safari; Firefox limited) |
+| OGG    | ✅ | ✅ Supported (Chrome, Firefox; not Safari) |
+| OPUS   | ✅ | ✅ Supported (Chrome, Firefox, Safari 14+) |
+| WavPack (WV) | ✅ | ❌ Not supported by browser audio |
+| AIFF   | ✅ | ⚠️ Safari only |
 
 ## Ecosystem Role
 
@@ -172,7 +184,7 @@ OpenTone/
 
 ## Store Readiness
 
-OpenTone v0.3.1 includes a baseline store-readiness pass to prepare for potential distribution via app stores (Microsoft Store, Mac App Store, Linux package managers). The full checklist is in [docs/store-readiness-checklist.md](./docs/store-readiness-checklist.md).
+OpenTone v0.3.3 includes a baseline store-readiness pass and a critical playback reliability fix to prepare for potential distribution via app stores (Microsoft Store, Mac App Store, Linux package managers). The full checklist is in [docs/store-readiness-checklist.md](./docs/store-readiness-checklist.md).
 
 Key results:
 
@@ -257,8 +269,8 @@ A full ARIA audit is planned for a future release.
 
 OpenTone follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`).
 
-- **Current version**: 0.3.1
-- **Release tags**: Git tags follow the `v*` pattern (e.g., `v0.3.1`).
+- **Current version**: 0.3.3
+- **Release tags**: Git tags follow the `v*` pattern (e.g., `v0.3.3`).
 - **Update mechanism**: There is no auto-update currently configured. Users download new versions from [GitHub Releases](https://github.com/sparshsam/OpenTone/releases). A signed auto-updater is planned for a future store-ready release.
 
 ## Support

@@ -106,8 +106,7 @@ function ArtistRow({
 
   return (
     <div className="px-6">
-     <button
-       onClick={() => setExpanded((p) => !p)}
+     <button type="button" onClick={() => setExpanded((p) => !p)}
        aria-expanded={expanded}
        aria-label={`${artist.name}: ${expanded ? "collapse" : "expand"}`}
        className="flex w-full items-center gap-4 py-3 text-left transition-colors hover:bg-surface-raised/50"
@@ -149,8 +148,7 @@ function ArtistRow({
                   {albumTracks
                     .sort((a, b) => a.track_number - b.track_number)
                     .map((track) => (
-                     <button
-                       key={track.id}
+                     <button type="button" key={track.id}
                        onClick={(e) => {
                          e.stopPropagation();
                          onPlayTrack(track);

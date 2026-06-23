@@ -72,8 +72,7 @@ export default function AddToPlaylistModal({
             </p>
           ) : (
             playlists.map((pl) => (
-               <button
-                 key={pl.id}
+               <button type="button" key={pl.id}
                  onClick={() => handleAdd(pl.id)}
                  disabled={adding === pl.id}
                  aria-label={`Add to ${pl.name}`}
@@ -88,8 +87,7 @@ export default function AddToPlaylistModal({
         </div>
 
         <div className="border-t border-border px-4 py-2 text-right">
-         <button
-           onClick={onClose}
+         <button type="button" onClick={onClose}
            aria-label="Cancel"
            className="rounded-lg px-3 py-1.5 text-xs text-muted hover:text-text"
          >
