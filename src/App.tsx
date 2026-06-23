@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { invoke, convertFileSrc } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   type Track,
@@ -37,6 +38,16 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+
+  const mimeTypeFor = (format: string): string => {
+  const map: Record<string, string> = {
+    mp3: "audio/mpeg", flac: "audio/flac", wav: "audio/wav",
+    aac: "audio/aac", m4a: "audio/mp4", ogg: "audio/ogg",
+    opus: "audio/ogg", wv: "audio/wavpack", aiff: "audio/aiff", aif: "audio/aiff",
+  };
+  return map[format] || "audio/mpeg";
+  };
 
   const [playbackError, setPlaybackError] = useState<string | null>(null);
   const queueRef = useRef<Track[]>([]);
@@ -132,32 +143,57 @@ export default function App() {
       audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
     };
      
      
 
   }, []);
-  // Load track when queue index changes
+  // Load track when queue index changes — read file bytes via IPC, serve as Blob URL
   useEffect(() => {
+    if (!currentTrack) return;
     const audio = audioRef.current;
-    if (!audio || !currentTrack) return;
+    if (!audio) return;
 
     setPlaybackError(null);
-    audio.src = convertFileSrc(currentTrack.path);
-    audio.load();
 
-    if (isPlaying) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err: DOMException) => {
-          console.warn("Playback failed:", err);
-          setPlaybackError(
-            `Could not play this file: ${err.message || "File may be missing or in an unsupported format."}`
-          );
-          setIsPlaying(false);
-        });
-      }
+    // Revoke previous object URL to avoid memory leaks
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
+
+    (async () => {
+      try {
+        const data = await readFile(currentTrack.path);
+        const blob = new Blob([data], { type: mimeTypeFor(currentTrack.format) });
+        const url = URL.createObjectURL(blob);
+        objectUrlRef.current = url;
+        audio.src = url;
+        audio.load();
+
+        if (isPlaying) {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((err: DOMException) => {
+              console.warn("Playback failed:", err);
+              setPlaybackError(
+                `Could not play this file: ${err.message || "File may be missing or in an unsupported format."}`
+              );
+              setIsPlaying(false);
+            });
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error("Failed to read audio file:", msg);
+        setPlaybackError(`Could not read file: ${msg}`);
+        setIsPlaying(false);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueIndex, currentTrack?.id]);
 
