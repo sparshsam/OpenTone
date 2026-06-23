@@ -2,6 +2,18 @@
 
 All notable changes to OpenTone will be documented in this file.
 
+## [v0.3.2] — 2025-06-22
+
+### Fixed
+- **Local audio playback** — Restored reliable playback of scanned music files. The root cause was that the webview `<audio>` element received raw filesystem paths (e.g., `/home/user/Music/song.mp3`), which Tauri's custom-protocol webview cannot load. Fixed by using `convertFileSrc()` to convert filesystem paths to Tauri's built-in `https://asset.localhost/` asset protocol URLs, which the webview audio element can access securely.
+- **End-of-track advancement** — The `onEnded` event handler captured a stale empty `queue` reference at setup time, preventing automatic advance to the next track. Fixed by using refs (`queueRef`, `queueIndexRef`) that stay current without re-registering the event listener.
+- **User-visible playback errors** — Added `onError` event listener on the audio element with descriptive messages (decode failure, unsupported format, missing file). Playback failures now surface as a red banner above the playback bar instead of failing silently.
+- **Playback control fixes** — `handlePrevious` now resets `currentTime` to 0 when restarting from >3s. `handleNext`/`handlePrevious` use refs for reliable queue access. `handlePlayPause` clears errors on action.
+
+### Changed
+- Version bumped to 0.3.2 across package.json, Cargo.toml, tauri.conf.json
+- Added `core:asset:default` permission and `core:asset` scope for `$HOME/**` to capabilities for asset protocol support
+
 ## [v0.3.1] — 2025-06-22
 
 ### Added

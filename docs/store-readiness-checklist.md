@@ -1,4 +1,4 @@
-# Store Readiness Checklist — OpenTone v0.3.1
+# Store Readiness Checklist — OpenTone v0.3.2
 
 > Status reference: ✅ Complete | ❌ Not applicable | 🔲 Planned | 🔧 Needs manual store-console work
 

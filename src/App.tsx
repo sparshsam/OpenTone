@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, convertFileSrc } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import {
   type Track,
@@ -37,6 +37,12 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const [playbackError, setPlaybackError] = useState<string | null>(null);
+  const queueRef = useRef<Track[]>([]);
+  const queueIndexRef = useRef<number>(-1);
+  useEffect(() => { queueRef.current = queue; }, [queue]);
+  useEffect(() => { queueIndexRef.current = queueIndex; }, [queueIndex]);
 
   // Playlist state
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -81,40 +87,76 @@ export default function App() {
     audioRef.current = audio;
 
     const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+
     const onEnded = () => {
-      setQueueIndex((prev) => {
-        const next = prev + 1;
-        if (next < queue.length) {
-          setIsPlaying(true);
-          return next;
-        }
+      const q = queueRef.current;
+      const idx = queueIndexRef.current;
+      if (idx < 0) return;
+      const next = idx + 1;
+      if (next < q.length) {
+        setQueueIndex(next);
+      } else {
         setIsPlaying(false);
-        return prev;
-      });
+      }
+    };
+
+    const onError = () => {
+      const err = audio.error;
+      if (!err) return;
+      let msg = "Playback failed.";
+      switch (err.code) {
+        case MediaError.MEDIA_ERR_ABORTED:
+          msg = "Playback was aborted.";
+          break;
+        case MediaError.MEDIA_ERR_NETWORK:
+          msg = "A network error occurred while loading the audio file.";
+          break;
+        case MediaError.MEDIA_ERR_DECODE:
+          msg = "Could not decode this audio file. The format may not be supported.";
+          break;
+        case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          msg = "The audio format is not supported or the file could not be found.";
+          break;
+      }
+      setPlaybackError(msg);
+      setIsPlaying(false);
     };
 
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("error", onError);
 
     return () => {
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("error", onError);
       audio.pause();
       audio.src = "";
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+     
+     
 
+  }, []);
   // Load track when queue index changes
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
 
-    audio.src = currentTrack.path;
+    setPlaybackError(null);
+    audio.src = convertFileSrc(currentTrack.path);
+    audio.load();
+
     if (isPlaying) {
-      audio.play().catch(() => {
-        console.warn("Playback unavailable — audio backend may not be connected");
-      });
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err: DOMException) => {
+          console.warn("Playback failed:", err);
+          setPlaybackError(
+            `Could not play this file: ${err.message || "File may be missing or in an unsupported format."}`
+          );
+          setIsPlaying(false);
+        });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueIndex, currentTrack?.id]);
@@ -125,7 +167,14 @@ export default function App() {
     if (!audio || !currentTrack) return;
 
     if (isPlaying) {
-      audio.play().catch(() => {});
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err: DOMException) => {
+          console.warn("Play failed:", err);
+          setPlaybackError(`Playback failed: ${err.message || "Unknown error"}`);
+          setIsPlaying(false);
+        });
+      }
     } else {
       audio.pause();
     }
@@ -188,30 +237,29 @@ export default function App() {
 
   const handlePlayPause = useCallback(() => {
     if (!currentTrack) return;
+    setPlaybackError(null);
     setIsPlaying((p) => !p);
   }, [currentTrack]);
 
   const handleNext = useCallback(() => {
-    if (queue.length === 0) return;
-    setQueueIndex((prev) => {
-      const next = prev + 1;
-      if (next < queue.length) {
-        setIsPlaying(true);
-        return next;
-      }
-      return prev;
-    });
-  }, [queue]);
+    const q = queueRef.current;
+    if (q.length === 0) return;
+    setPlaybackError(null);
+    setQueueIndex((prev) => Math.min(prev + 1, q.length - 1));
+  }, []);
 
   const handlePrevious = useCallback(() => {
-    if (queue.length === 0) return;
+    const q = queueRef.current;
+    if (q.length === 0) return;
+    setPlaybackError(null);
     const audio = audioRef.current;
     if (audio && audio.currentTime > 3) {
       audio.currentTime = 0;
+      setCurrentTime(0);
       return;
     }
     setQueueIndex((prev) => Math.max(prev - 1, 0));
-  }, [queue]);
+  }, []);
 
   const handleSeek = useCallback((time: number) => {
     const audio = audioRef.current;
@@ -528,6 +576,7 @@ export default function App() {
         artworkUri={currentArtworkUri}
         queueLength={queue.length}
         queueIndex={queueIndex}
+        playbackError={playbackError}
       />
 
       {/* Add to playlist modal */}
