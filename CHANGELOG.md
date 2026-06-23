@@ -5,14 +5,18 @@ All notable changes to OpenTone will be documented in this file.
 ## [v0.3.2] — 2025-06-22
 
 ### Fixed
-- **Local audio playback** — Restored reliable playback of scanned music files. The root cause was that the webview `<audio>` element received raw filesystem paths (e.g., `/home/user/Music/song.mp3`), which Tauri's custom-protocol webview cannot load. Fixed by using `convertFileSrc()` to convert filesystem paths to Tauri's built-in `https://asset.localhost/` asset protocol URLs, which the webview audio element can access securely.
+- **Local audio playback** — Restored reliable playback of scanned music files. The webview `<audio>` element could not load raw filesystem paths. Fixed by reading file bytes via `readFile()` from `@tauri-apps/plugin-fs`, wrapping them in a `Blob` with the correct MIME type, and using `URL.createObjectURL()` to create a playable source URL. (Replaced earlier `convertFileSrc()` approach which was unreliable due to Tauri asset protocol scope limitations.)
 - **End-of-track advancement** — The `onEnded` event handler captured a stale empty `queue` reference at setup time, preventing automatic advance to the next track. Fixed by using refs (`queueRef`, `queueIndexRef`) that stay current without re-registering the event listener.
 - **User-visible playback errors** — Added `onError` event listener on the audio element with descriptive messages (decode failure, unsupported format, missing file). Playback failures now surface as a red banner above the playback bar instead of failing silently.
 - **Playback control fixes** — `handlePrevious` now resets `currentTime` to 0 when restarting from >3s. `handleNext`/`handlePrevious` use refs for reliable queue access. `handlePlayPause` clears errors on action.
+- **Tab-switching hang** — Album artwork loaded sequentially for every album via individual `invoke()` calls, each doing I/O-heavy image decode, resize, cache, and base64 encode. Fixed by parallelizing with `Promise.all()` and batching state updates into a single `setArtworkCache` call. Same fix applied to TrackList artwork loading.
 
 ### Changed
 - Version bumped to 0.3.2 across package.json, Cargo.toml, tauri.conf.json
-- Added `core:asset:default` permission and `core:asset` scope for `$HOME/**` to capabilities for asset protocol support
+- Playback architecture: `readFile()` + `Blob` + `URL.createObjectURL()` instead of `convertFileSrc()`
+- Android platform support — `npx tauri android init` scaffolds Android project in `src-tauri/gen/android/`
+- Capabilities updated with `platforms: ["windows", "linux", "macOS", "android"]` and Android `$HOME`-equivalent paths `/storage/emulated/0/Music/**` and `/storage/emulated/0/Download/**`
+- AGENTS.md updated with playback conventions, Android setup instructions, expanded quality gates
 
 ## [v0.3.1] — 2025-06-22
 
