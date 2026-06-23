@@ -12,6 +12,7 @@ interface PlaybackBarProps {
   artworkUri: string | null;
   queueLength: number;
   queueIndex: number;
+  playbackError: string | null;
 }
 
 function formatTime(seconds: number): string {
@@ -33,6 +34,7 @@ export default function PlaybackBar({
   artworkUri,
   queueLength,
   queueIndex,
+  playbackError,
 }: PlaybackBarProps) {
   const hasTrack = currentTrack !== null;
   const canPrevious = hasTrack && queueLength > 0;
@@ -51,6 +53,11 @@ export default function PlaybackBar({
     <div className={`flex h-20 items-center border-t border-border bg-surface px-4 ${
       !hasTrack ? "opacity-60" : ""
     }`}>
+      {playbackError && (
+        <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-full rounded-b-lg bg-red-500/90 px-4 py-1.5 text-xs text-white shadow-lg">
+          {playbackError}
+        </div>
+      )}
       {/* Track info with artwork */}
       <div className="flex w-72 items-center gap-3">
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-raised">

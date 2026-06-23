@@ -1,6 +1,6 @@
 [package]
 name = "opentone"
-version = "0.3.1"
+version = "0.3.2"
 description = "OpenTone — offline-first personal music library and desktop player for music you own."
 authors = ["Sparsh Sam"]
 license = "MIT"
