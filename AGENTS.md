@@ -33,6 +33,10 @@ This file provides orientation for AI coding agents working on the OpenTone proj
 ## Code Conventions
 
 - React functional components with TypeScript interfaces
+- **ARIA attributes must be JSX props, never rendered text.** Every `aria-label`, `aria-describedby`, and `aria-current` must be an attribute on a JSX element, never a standalone text node.
+- **All `<button>` elements must include `type="button"`** unless inside a `<form>` and intended as submit. Prevents accidental form behavior.
+- **Use semantic HTML**: prefer `<button>` over `<div role="button">`, `<nav>` over `<div role="navigation">`. Interactive cards should use `<button>`.
+- **Keyboard shortcuts**: Space/Enter handlers must check `event.target` and skip button/link/select elements to avoid unexpected playback toggling.
 - Rust backend uses Tauri commands with JSON serializable structs
 - SQLite schema changes must include migrations (use `db::initialize_db()`)
 - Keep the API surface minimal — prefer backend-side logic over frontend complexity

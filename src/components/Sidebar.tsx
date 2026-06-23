@@ -33,8 +33,7 @@ export default function Sidebar({
   };
 
   return (
-   <aside className="flex w-56 flex-col border-r border-border bg-surface">
-     aria-label="Sidebar navigation"
+   <aside aria-label="Sidebar navigation" className="flex w-56 flex-col border-r border-border bg-surface">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-border px-5 py-4">
         <svg viewBox="0 0 64 64" className="h-6 w-6 text-accent" fill="none">
@@ -49,13 +48,11 @@ export default function Sidebar({
       </div>
 
       {/* Navigation */}
-     <nav className="flex-1 space-y-1 px-3 py-4">
-       aria-label="Main navigation"
+     <nav aria-label="Main navigation" className="flex-1 space-y-1 px-3 py-4">
        {navItems.map((item) => {
          const count = countMap[item.view];
          return (
-           <button
-             key={item.view}
+           <button type="button" key={item.view}
              onClick={() => onNavigate(item.view)}
              aria-current={currentView === item.view ? "page" : undefined}
              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${

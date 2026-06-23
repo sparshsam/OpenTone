@@ -2,6 +2,25 @@
 
 All notable changes to OpenTone will be documented in this file.
 
+## [v0.3.3] — 2026-06-23
+
+### Fixed
+- **ARIA attributes rendered as visible text** — `aria-label="Sidebar navigation"` and `aria-label="Main navigation"` in `Sidebar.tsx` were placed as standalone text nodes after their JSX tags instead of being proper JSX attributes. Moved them onto the `<aside>` and `<nav>` elements. All other `aria-label` usages were already correct JSX props.
+- **Space key toggles playback on buttons** — The global keyboard shortcut handler toggled playback when Space was pressed while a button or any interactive element was focused. Added `isButton` detection (checks for `button`, `[role="button"]`, `a`, `select`) so pressing Space on focused controls does not trigger playback unexpectedly.
+- **Album card accessibility** — Changed `<div role="button" tabIndex={0}>` to actual `<button type="button">` in AlbumView's AlbumCard. Semantically correct, keyboard accessible by default, no unexpected focus behavior.
+- **Missing type="button" on buttons** — Added `type="button"` to every `<button>` element across all components to prevent accidental form submission behavior (none exist currently, but this is a standard safety practice).
+- **Lint warnings** — Fixed 2 pre-existing eslint warnings by updating dependency arrays in App.tsx and AlbumView.tsx.
+
+### Changed
+- Version bumped to 0.3.3 across package.json, Cargo.toml, tauri.conf.json
+- AGENTS.md updated with ARIA rendering conventions
+
+### Notes
+- Album artwork loads in parallel (from v0.3.2) — already fixed
+- Metadata extraction via `lofty` (title, artist, album, track number, year, duration, bitrate, sample rate, embedded artwork) — all confirmed working
+- Android platform scaffolded via `npx tauri android init` — `src-tauri/gen/android/` generated
+- Android build requires NDK 27+ and Rust targets (`aarch64-linux-android`, `armv7-linux-androideabi`, `i686-linux-android`, `x86_64-linux-android`)
+
 ## [v0.3.2] — 2025-06-22
 
 ### Fixed

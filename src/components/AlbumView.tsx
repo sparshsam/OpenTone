@@ -27,14 +27,12 @@ function AlbumCard({
   const durationStr = formatDuration(album.duration);
 
   return (
-     <div
-       className={`group cursor-pointer rounded-lg border p-3 transition-colors hover:bg-surface-raised ${
+     <button type="button"
+       className={`group rounded-lg border p-3 text-left transition-colors hover:bg-surface-raised ${
          isCurrentAlbum
            ? "border-accent bg-surface-raised"
            : "border-border bg-surface"
        }`}
-       role="button"
-       tabIndex={0}
        aria-label={`Play album ${album.title} by ${album.artist}`}
        onClick={() => onPlay(tracks, 0)}
      >
@@ -69,8 +67,8 @@ function AlbumCard({
         <span>{album.track_count} tracks</span>
         <span>•</span>
         <span>{durationStr}</span>
-      </div>
     </div>
+    </button>
   );
 }
 
@@ -145,7 +143,7 @@ export default function AlbumView({
       }
     }
     loadArtwork();
-  }, [albums, artworkCache]);
+  }, [albums, artworkCache, tracksByAlbum]);
 
   // Find current album from current track
   const currentAlbum = useMemo(() => {

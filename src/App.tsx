@@ -222,11 +222,12 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      const isButton = target.closest("button, [role=\"button\"], a, select") !== null;
 
       switch (e.key) {
         case " ":
           e.preventDefault();
-          if (!isInput && currentTrack) {
+          if (!isInput && !isButton && currentTrack) {
             setIsPlaying((p) => !p);
           }
           break;
@@ -269,6 +270,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTrack, searchQuery]);
 
   const handlePlayPause = useCallback(() => {
@@ -350,7 +352,7 @@ export default function App() {
       }
     }
     loadArtwork();
-  }, [currentTrack?.id, currentTrack?.has_artwork, artworkCache]);
+  }, [currentTrack, artworkCache]);
 
   const handleImport = useCallback(async () => {
     try {

@@ -91,8 +91,7 @@ export default function PlaybackBar({
       {/* Playback controls */}
       <div className="flex flex-1 flex-col items-center gap-1">
         <div className="flex items-center gap-4">
-         <button
-           onClick={onPrevious}
+         <button type="button" onClick={onPrevious}
            disabled={!canPrevious}
            aria-label="Previous track"
            className={`transition-colors ${
@@ -102,8 +101,7 @@ export default function PlaybackBar({
           >
             ⏮
           </button>
-         <button
-           onClick={onPlayPause}
+         <button type="button" onClick={onPlayPause}
            disabled={!hasTrack}
            aria-label={hasTrack ? (isPlaying ? "Pause" : "Play") : "No track"}
            className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
@@ -115,8 +113,7 @@ export default function PlaybackBar({
           >
             {isPlaying ? "⏸" : "▶"}
           </button>
-         <button
-           onClick={onNext}
+         <button type="button" onClick={onNext}
            disabled={!canNext}
            aria-label="Next track"
            className={`transition-colors ${

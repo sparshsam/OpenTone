@@ -184,7 +184,7 @@ OpenTone/
 
 ## Store Readiness
 
-OpenTone v0.3.2 includes a baseline store-readiness pass and a critical playback reliability fix to prepare for potential distribution via app stores (Microsoft Store, Mac App Store, Linux package managers). The full checklist is in [docs/store-readiness-checklist.md](./docs/store-readiness-checklist.md).
+OpenTone v0.3.3 includes a baseline store-readiness pass and a critical playback reliability fix to prepare for potential distribution via app stores (Microsoft Store, Mac App Store, Linux package managers). The full checklist is in [docs/store-readiness-checklist.md](./docs/store-readiness-checklist.md).
 
 Key results:
 
@@ -269,8 +269,8 @@ A full ARIA audit is planned for a future release.
 
 OpenTone follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`).
 
-- **Current version**: 0.3.2
-- **Release tags**: Git tags follow the `v*` pattern (e.g., `v0.3.2`).
+- **Current version**: 0.3.3
+- **Release tags**: Git tags follow the `v*` pattern (e.g., `v0.3.3`).
 - **Update mechanism**: There is no auto-update currently configured. Users download new versions from [GitHub Releases](https://github.com/sparshsam/OpenTone/releases). A signed auto-updater is planned for a future store-ready release.
 
 ## Support

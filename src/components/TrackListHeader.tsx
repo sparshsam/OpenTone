@@ -42,8 +42,7 @@ export default function TrackListHeader({
             className="w-48 rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-xs text-text placeholder-muted/50 outline-none transition-colors focus:border-accent"
           />
           {searchQuery && (
-       <button
-         onClick={() => onSearchChange("")}
+       <button type="button" onClick={() => onSearchChange("")}
          aria-label="Clear search"
          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted/50 hover:text-text"
        >
@@ -52,8 +51,7 @@ export default function TrackListHeader({
           )}
         </div>
 
-        <button
-          onClick={onImport}
+        <button type="button" onClick={onImport}
           disabled={isScanning}
           className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
         >
@@ -61,8 +59,7 @@ export default function TrackListHeader({
         </button>
 
         {hasLibraryPath && (
-          <button
-            onClick={onRescan}
+          <button type="button" onClick={onRescan}
             disabled={isScanning}
             className="rounded-lg bg-surface-hover px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-text disabled:opacity-50"
           >

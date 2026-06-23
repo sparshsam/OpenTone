@@ -135,8 +135,7 @@ function TrackRow({
       <td className="w-20 px-3 py-2 text-right text-muted tabular-nums">
         <div className="flex items-center justify-end gap-2">
           <span>{formatSize(track.file_size)}</span>
-          <button
-            onClick={(e) => {
+          <button type="button" onClick={(e) => {
               e.stopPropagation();
               onToggleFavorite(track.id);
             }}
@@ -154,8 +153,7 @@ function TrackRow({
       </td>
       {showAddToPlaylist && onAddToPlaylist && (
         <td className="w-10 px-2 py-2 text-center">
-          <button
-            onClick={(e) => {
+          <button type="button" onClick={(e) => {
               e.stopPropagation();
               onAddToPlaylist(track);
             }}
@@ -169,8 +167,7 @@ function TrackRow({
       )}
       {showRemoveFromPlaylist && onRemoveFromPlaylist && (
         <td className="w-10 px-2 py-2 text-center">
-          <button
-            onClick={(e) => {
+          <button type="button" onClick={(e) => {
               e.stopPropagation();
               onRemoveFromPlaylist(track.id);
             }}

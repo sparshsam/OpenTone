@@ -65,8 +65,7 @@ export default function PlaylistDetailView({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center gap-3 border-b border-border px-4 py-3">
-        <button
-          onClick={onBack}
+        <button type="button" onClick={onBack}
           className="rounded-lg px-2 py-1 text-sm text-muted transition-colors hover:text-text"
         >
           ← Back
